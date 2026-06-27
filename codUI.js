@@ -247,10 +247,55 @@ class CodUI extends HTMLElement {
     }
 
     highlight(code, lang) {
-        // Strings (double/backtick/single)
-        code = code.replace(/(["\`])(.*?)\1/g, '<span class="string">$1$2$1</span>');
-        code = code.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="string">$1</span>');
-        // Numbers
+        if (!code) return '';
+        lang = (lang || 'js').toLowerCase();
+
+        // ── 1. HTML / XML ──
+        if (lang === 'html' || lang === 'xml') {
+            code = code.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="comment">$1</span>');
+            code = code.replace(/(&lt;\/?)([a-zA-Z0-9\-:]+)/g, '$1<span class="tag">$2</span>');
+            code = code.replace(/\b([a-zA-Z0-9\-:]+)(?=\s*=)/g, '<span class="attr">$1</span>');
+            code = code.replace(/(["'])(.*?)\1/g, (match) => {
+                if (match.includes('span') || match === '"tag"' || match === '"attr"' || match === '"comment"' || match === '"string"') return match;
+                return `<span class="string">${match}</span>`;
+            });
+            return code;
+        }
+
+        // ── 2. JSON ──
+        if (lang === 'json') {
+            code = code.replace(/"([^"]+)"(?=\s*:)/g, '<span class="attr">"$1"</span>');
+            code = code.replace(/"([^"]+)"(?!\s*:)/g, (match) => {
+                if (match.includes('<span')) return match;
+                return `<span class="string">${match}</span>`;
+            });
+            code = code.replace(/\b(true|false|null)\b/g, '<span class="keyword">$1</span>');
+            code = code.replace(/\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="number">$1</span>');
+            return code;
+        }
+
+        // ── 3. CSS ──
+        if (lang === 'css') {
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
+            code = code.replace(/(["'])(.*?)\1/g, '<span class="string">$1$2$1</span>');
+            code = code.replace(/(--[\w-]+)/g, '<span class="keyword">$1</span>');
+            code = code.replace(/([\w-]+)(?=\s*:)/g, '<span class="attr">$1</span>');
+            code = code.replace(/\b(\d+(\.\d+)?(px|rem|em|%|vh|vw|s|ms)?)\b/g, '<span class="number">$1</span>');
+            return code;
+        }
+
+        // ── 4. Python, Bash, JS, TS ──
+        if (lang === 'python' || lang === 'py' || lang === 'bash' || lang === 'sh' || lang === 'shell') {
+            code = code.replace(/(#.*)/g, '<span class="comment">$1</span>');
+        } else {
+            code = code.replace(/(\/\/.*)/g, '<span class="comment">$1</span>');
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
+        }
+
+        code = code.replace(/(["'`])(.*?)\1/g, (match) => {
+            if (match.includes('<span')) return match;
+            return `<span class="string">${match}</span>`;
+        });
         code = code.replace(/\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="number">$1</span>');
 
         let keywords = [];
@@ -259,50 +304,29 @@ class CodUI extends HTMLElement {
         if (lang === 'python' || lang === 'py') {
             keywords     = ['def', 'import', 'from', 'self', 'True', 'False', 'None', 'lambda', 'yield', 'pass', 'raise', 'global', 'nonlocal'];
             controlWords = ['return', 'if', 'elif', 'else', 'in', 'not', 'and', 'or', 'for', 'while', 'try', 'except', 'finally', 'with', 'as', 'assert', 'del'];
-            code = code.replace(/(#.*)/g, '<span class="comment">$1</span>');
-
-        } else if (lang === 'html' || lang === 'xml') {
-            code = code.replace(/(&lt;\/?)([a-zA-Z0-9\-:]+)/g, '$1<span class="tag">$2</span>');
-            code = code.replace(/(\s)([a-zA-Z0-9\-:]+)(=["'])/g, '$1<span class="attr">$2</span>$3');
-            code = code.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="comment">$1</span>');
-
-        } else if (lang === 'css') {
-            code = code.replace(/(--[\w-]+)/g, '<span class="keyword">$1</span>');
-            code = code.replace(/([\w-]+)(?=\s*:)/g, '<span class="attr">$1</span>');
-            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
-
-        } else if (lang === 'json') {
-            code = code.replace(/"([^"]+)"(\s*:)/g, '<span class="attr">"$1"</span>$2');
-            code = code.replace(/\b(true|false|null)\b/g, '<span class="keyword">$1</span>');
-
         } else if (lang === 'bash' || lang === 'sh' || lang === 'shell') {
             keywords     = ['export', 'local', 'readonly', 'source', 'declare', 'unset', 'echo', 'set'];
             controlWords = ['if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'do', 'done', 'case', 'esac', 'in', 'function', 'return', 'exit'];
-            code = code.replace(/(\$\{?[\w_]+\}?)/g, '<span class="number">$1</span>');
-            code = code.replace(/(#.*)/g, '<span class="comment">$1</span>');
-
+            code = code.replace(/(\$\{?[\w_]+\}?)/g, (match) => match.includes('<span') ? match : `<span class="number">${match}</span>`);
         } else {
-            // JS / TS (lang: js, ts, jsx, tsx)
             keywords     = ['const', 'let', 'var', 'function', 'import', 'export', 'default', 'new', 'this',
                             'async', 'await', 'typeof', 'instanceof',
                             'interface', 'type', 'enum', 'namespace', 'declare', 'abstract',
                             'implements', 'extends', 'readonly', 'keyof', 'infer', 'as'];
             controlWords = ['return', 'if', 'else', 'for', 'while', 'try', 'catch', 'finally',
                             'switch', 'case', 'break', 'continue', 'throw', 'of', 'in'];
-            code = code.replace(/(\/\/.*)/g, '<span class="comment">$1</span>');
-            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
         }
 
         if (keywords.length) {
             const kwRe = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-            code = code.replace(kwRe, '<span class="keyword">$1</span>');
+            code = code.replace(kwRe, (match) => `<span class="keyword">${match}</span>`);
         }
         if (controlWords.length) {
             const ctRe = new RegExp(`\\b(${controlWords.join('|')})\\b`, 'g');
-            code = code.replace(ctRe, '<span class="control">$1</span>');
+            code = code.replace(ctRe, (match) => `<span class="control">${match}</span>`);
         }
 
-        code = code.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span class="function">$1</span>');
+        code = code.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, (match) => `<span class="function">${match}</span>`);
         return code;
     }
 }
