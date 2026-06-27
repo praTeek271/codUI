@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodUI Studio — Interactive Code Highlighter Playground</title>
+    <meta name="description" content="Live playground for CodUI — the zero-dependency Web Component for code syntax highlighting.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="../codUI.js" defer></script>
+
+    <style>
+        /* ════════════════════════════════════════════
+           Light Steel — 9-shade grayscale system
+           #f8f9fa Snow · #e9ecef Platinum · #dee2e6 Alabaster
+           #ced4da Pale Slate · #adb5bd Slate · #6c757d Slate Grey
+           #495057 Iron · #343a40 Gunmetal · #212529 Shadow
+        ════════════════════════════════════════════ */
+        :root {
+            --snow:   #f8f9fa;
+            --plat:   #e9ecef;
+            --alab:   #dee2e6;
+            --pslate: #ced4da;
+            --slate:  #adb5bd;
+            --sgrey:  #6c757d;
+            --iron:   #495057;
+            --gun:    #343a40;
+            --shadow: #212529;
+
+            --bg:        #212529;
+            --bg-raised: #343a40;
+            --bg-card:   #495057;
+
+            --border:   rgba(108,117,125,0.28);
+            --border-hi: #adb5bd;
+
+            --txt1: #f8f9fa;
+            --txt2: #e9ecef;
+            --txt3: #adb5bd;
+            --txt4: #6c757d;
+
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+            --font-ui:   'Inter', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--shadow);
+            color: var(--snow);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 65% 50% at 0% 0%,   rgba(73,80,87,0.55) 0%, transparent 55%),
+                radial-gradient(ellipse 55% 50% at 100% 100%, rgba(52,58,64,0.65) 0%, transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── Header ─── */
+        header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(33,37,41,0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px; height: 64px;
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 24px;
+        }
+
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+        .logo-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #6c757d 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; color: #212529;
+            box-shadow: 0 0 14px rgba(248,249,250,0.14);
+        }
+        .logo-text { font-size: 17px; font-weight: 700; color: var(--snow); letter-spacing: -0.3px; }
+        .logo-text span { color: var(--slate); }
+        .header-badge {
+            font-size: 10px; font-weight: 600;
+            color: var(--slate);
+            background: rgba(173,181,189,0.10);
+            border: 1px solid rgba(173,181,189,0.24);
+            padding: 2px 8px; border-radius: 20px;
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+
+        .header-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .ctrl-group { display: flex; align-items: center; gap: 7px; }
+        .ctrl-label {
+            font-size: 11px; font-weight: 500;
+            color: var(--sgrey);
+            text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap;
+        }
+
+        /* ── Hide native selects (custom dropdowns take over) ── */
+        select { display: none !important; }
+        input[type="text"] {
+            background: rgba(52,58,64,0.96);
+            border: 1px solid rgba(108,117,125,0.32);
+            color: var(--snow); font-family: var(--font-ui);
+            font-size: 13px; border-radius: var(--radius-sm);
+            padding: 5px 10px; outline: none; width: 68px;
+            transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--slate);
+            box-shadow: 0 0 0 3px rgba(173,181,189,0.16);
+        }
+
+        /* ── Custom Dropdown ── */
+        @keyframes ddSlide {
+            from { opacity: 0; transform: scaleY(0.82) translateY(-6px); }
+            to   { opacity: 1; transform: scaleY(1)    translateY(0); }
+        }
+
+        .cs-wrap {
+            position: relative;
+            display: inline-flex;
+            flex-shrink: 0;
+        }
+        .cs-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(52,58,64,0.96);
+            border: 1px solid rgba(108,117,125,0.32);
+            color: var(--snow);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            padding: 5px 10px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .cs-trigger:hover {
+            border-color: rgba(173,181,189,0.55);
+            background: rgba(73,80,87,0.96);
+        }
+        .cs-wrap.open .cs-trigger {
+            border-color: var(--slate);
+            box-shadow: 0 0 0 3px rgba(173,181,189,0.16);
+        }
+        .cs-arrow {
+            width: 12px; height: 12px;
+            flex-shrink: 0;
+            color: var(--sgrey);
+            transition: transform 0.22s cubic-bezier(0.4,0,0.2,1), color 0.18s;
+        }
+        .cs-wrap.open .cs-arrow {
+            transform: rotate(180deg);
+            color: var(--slate);
+        }
+        .cs-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 100%;
+            background: #2c3137;
+            border: 1px solid rgba(108,117,125,0.38);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 500;
+            overflow: hidden;
+            transform-origin: top center;
+            animation: ddSlide 0.2s cubic-bezier(0.4,0,0.2,1) forwards;
+            padding: 4px 0;
+        }
+        .cs-option {
+            padding: 8px 14px;
+            font-size: 13px;
+            color: var(--plat);
+            cursor: pointer;
+            transition: background 0.14s, color 0.14s;
+            white-space: nowrap;
+        }
+        .cs-option:hover {
+            background: rgba(108,117,125,0.22);
+            color: var(--snow);
+        }
+        .cs-option.active {
+            color: var(--snow);
+            font-weight: 600;
+            background: rgba(108,117,125,0.14);
+        }
+
+        /* Toggle */
+        .toggle-label { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+        .toggle-label input[type="checkbox"] { display: none; }
+        .toggle-track {
+            width: 34px; height: 18px;
+            background: rgba(52,58,64,0.96);
+            border: 1px solid rgba(108,117,125,0.32);
+            border-radius: 20px; position: relative;
+            transition: background 0.2s, border-color 0.2s; flex-shrink: 0;
+        }
+        .toggle-track::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--sgrey);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .toggle-label input:checked + .toggle-track { background: var(--iron); border-color: var(--slate); }
+        .toggle-label input:checked + .toggle-track::after { transform: translateX(16px); background: var(--snow); }
+        .toggle-text { font-size: 12px; color: var(--slate); font-weight: 500; }
+
+        .ctrl-divider { width: 1px; height: 22px; background: rgba(108,117,125,0.22); flex-shrink: 0; }
+
+        /* ─── Layout ─── */
+        main {
+            flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+            position: relative; z-index: 1;
+            height: calc(100vh - 64px);
+            overflow: hidden;
+        }
+
+        .pane { display: flex; flex-direction: column; border-right: 1px solid rgba(108,117,125,0.18); min-height: 0; }
+        .pane:last-child { border-right: none; }
+
+        .pane-header {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            padding: 11px 24px;
+            border-bottom: 1px solid rgba(108,117,125,0.16);
+            background: rgba(33,37,41,0.78); flex-shrink: 0;
+        }
+        .pane-title {
+            font-size: 11px; font-weight: 600; color: var(--sgrey);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .pane-title-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--slate);
+            box-shadow: 0 0 6px rgba(173,181,189,0.55);
+        }
+        .pane-title-dot.b { background: var(--pslate); box-shadow: 0 0 6px rgba(206,212,218,0.45); }
+
+        .lang-select-wrapper { display: flex; align-items: center; gap: 8px; }
+
+        /* ─── Editor ─── */
+        .code-input-wrapper { flex: 1; display: flex; min-height: 0; }
+
+        .line-gutter {
+            padding: 20px 12px 20px 14px;
+            font-family: var(--font-mono); font-size: 13px; line-height: 1.65;
+            color: rgba(108,117,125,0.60); text-align: right;
+            background: rgba(33,37,41,0.55);
+            border-right: 1px solid rgba(108,117,125,0.13);
+            user-select: none; white-space: pre;
+            min-width: 48px; flex-shrink: 0; overflow: hidden;
+        }
+
+        #code-input {
+            flex: 1; background: transparent; border: none;
+            color: var(--plat); font-family: var(--font-mono);
+            font-size: 13px; line-height: 1.65;
+            padding: 20px; resize: none; outline: none;
+            height: 100%; tab-size: 4;
+            overflow: auto; white-space: pre;
+        }
+        #code-input::placeholder { color: rgba(108,117,125,0.50); }
+        #code-input::-webkit-scrollbar { width: 8px; height: 8px; }
+        #code-input::-webkit-scrollbar-track { background: transparent; }
+        #code-input::-webkit-scrollbar-thumb { background: rgba(108,117,125,0.35); border-radius: 4px; }
+        #code-input::-webkit-scrollbar-thumb:hover { background: rgba(108,117,125,0.55); }
+
+        /* ─── Preview ─── */
+        .preview-pane { display: flex; flex-direction: column; min-height: 0; }
+
+        .preview-canvas {
+            flex: 1; display: flex;
+            padding: 40px 32px; overflow: auto;
+            background: radial-gradient(circle, rgba(108,117,125,0.09) 1px, transparent 1px);
+            background-size: 28px 28px;
+            background-color: var(--shadow);
+            min-height: 0;
+        }
+        .preview-canvas::-webkit-scrollbar { width: 8px; height: 8px; }
+        .preview-canvas::-webkit-scrollbar-track { background: transparent; }
+        .preview-canvas::-webkit-scrollbar-thumb { background: rgba(108,117,125,0.35); border-radius: 4px; }
+        .preview-canvas::-webkit-scrollbar-thumb:hover { background: rgba(108,117,125,0.55); }
+
+        .preview-canvas > div { width: 100%; max-width: 720px; margin: auto; position: relative; z-index: 1; }
+
+        .empty-state { text-align: center; color: var(--sgrey); }
+        .empty-state svg { margin-bottom: 12px; opacity: 0.38; }
+        .empty-state p { font-size: 14px; }
+
+        /* ─── Export FAB ─── */
+        #btn-export {
+            position: fixed; bottom: 28px; right: 28px; z-index: 200;
+            display: flex; align-items: center; gap: 0;
+            background: var(--snow); color: var(--shadow);
+            border: none; border-radius: 50px;
+            height: 48px; padding: 0 16px; cursor: pointer;
+            font-family: var(--font-ui); font-size: 13px; font-weight: 700;
+            box-shadow: 0 4px 20px rgba(248,249,250,0.16);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+            overflow: hidden;
+        }
+        #btn-export:hover {
+            background: var(--plat);
+            box-shadow: 0 6px 28px rgba(248,249,250,0.26);
+            transform: translateY(-2px);
+        }
+        #btn-export .export-label {
+            max-width: 0; overflow: hidden; white-space: nowrap;
+            transition: max-width 0.28s ease, margin-left 0.28s ease;
+            margin-left: 0;
+        }
+        #btn-export:hover .export-label { max-width: 100px; margin-left: 8px; }
+
+        /* ─── Export Drawer ─── */
+        #export-drawer {
+            position: fixed; top: 0; right: 0;
+            height: 100%; width: 420px;
+            background: var(--gun);
+            border-left: 1px solid var(--border);
+            box-shadow: -8px 0 48px rgba(0,0,0,0.55);
+            z-index: 300; display: flex; flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.34s cubic-bezier(0.25,0.46,0.45,0.94);
+        }
+        #export-drawer.open { transform: translateX(0); }
+
+        .drawer-header {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .drawer-title { font-size: 15px; font-weight: 700; color: var(--snow); display: flex; align-items: center; gap: 8px; }
+        .drawer-title svg { color: var(--slate); }
+
+        #btn-close-drawer {
+            background: transparent;
+            border: 1px solid rgba(108,117,125,0.28);
+            color: var(--sgrey); width: 30px; height: 30px;
+            border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: color 0.18s, border-color 0.18s;
+        }
+        #btn-close-drawer:hover { color: var(--snow); border-color: var(--slate); }
+
+        .drawer-body { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+
+        .drawer-step-label {
+            font-size: 12px; font-weight: 600; color: var(--sgrey);
+            text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px;
+        }
+        .code-block {
+            background: rgba(33,37,41,0.88);
+            border: 1px solid rgba(108,117,125,0.22);
+            border-radius: var(--radius-md); padding: 14px 16px;
+            font-family: var(--font-mono); font-size: 12px;
+            color: var(--pslate); overflow: auto; line-height: 1.6;
+        }
+
+        #export-textarea {
+            width: 100%; height: 200px;
+            background: rgba(33,37,41,0.88);
+            border: 1px solid rgba(108,117,125,0.22);
+            border-radius: var(--radius-md); padding: 14px 16px;
+            font-family: var(--font-mono); font-size: 12px;
+            color: var(--pslate); resize: none; outline: none; line-height: 1.6;
+        }
+
+        .copy-snippet-btn {
+            width: 100%; padding: 10px;
+            background: var(--snow); color: var(--shadow);
+            border: none; border-radius: var(--radius-md);
+            font-family: var(--font-ui); font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
+        }
+        .copy-snippet-btn:hover { background: var(--plat); box-shadow: 0 4px 14px rgba(248,249,250,0.14); }
+        .copy-snippet-btn.copied { background: #22c55e; color: #fff; }
+
+        .info-card {
+            background: rgba(73,80,87,0.32);
+            border: 1px solid rgba(108,117,125,0.26);
+            border-radius: var(--radius-md); padding: 14px 16px;
+            font-size: 12px; color: var(--slate); line-height: 1.6;
+        }
+
+        /* ─── Overlay ─── */
+        #overlay {
+            position: fixed; inset: 0;
+            background: rgba(33,37,41,0.65);
+            backdrop-filter: blur(4px); z-index: 250;
+            opacity: 0; pointer-events: none; transition: opacity 0.28s;
+        }
+        #overlay.visible { opacity: 1; pointer-events: all; }
+
+        /* ─── Status bar ─── */
+        .status-bar {
+            height: 26px;
+            background: rgba(33,37,41,0.92);
+            border-top: 1px solid rgba(108,117,125,0.14);
+            display: flex; align-items: center;
+            padding: 0 24px; gap: 20px; flex-shrink: 0;
+        }
+        .status-item { font-size: 11px; color: var(--sgrey); display: flex; align-items: center; gap: 5px; }
+        .status-item .dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; grid-template-rows: 50vh 50vh; }
+            .pane { border-right: none; border-bottom: 1px solid rgba(108,117,125,0.18); }
+            header { padding: 0 16px; gap: 10px; height: auto; min-height: 56px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+            .header-controls { gap: 8px; }
+            #export-drawer { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── HEADER ── -->
+    <header>
+        <a class="logo" href="#">
+            <div class="logo-icon">&lt;/&gt;</div>
+            <div style="display: flex; flex-direction: column;">
+                <span class="logo-text">Cod<span>UI</span> .js</span>
+                <span style="font-size: 10px; color: var(--slate); font-weight: 500; margin-top: -2px;">code design generator studio</span>
+            </div>
+        </a>
+
+        <div class="header-controls">
+            <div class="ctrl-group">
+                <span class="ctrl-label">Theme</span>
+                <select id="ctrl-theme">
+                    <option value="dark">Dark</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="glass">Glass</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+
+            <div class="ctrl-divider"></div>
+
+            <label class="toggle-label" for="ctrl-lines">
+                <input type="checkbox" id="ctrl-lines" checked>
+                <div class="toggle-track"></div>
+                <span class="toggle-text">Line Nos.</span>
+            </label>
+
+            <div class="ctrl-divider"></div>
+
+            <div class="ctrl-group">
+                <span class="ctrl-label">Width</span>
+                <input type="text" id="ctrl-width" value="100%">
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">Max-H</span>
+                <input type="text" id="ctrl-height" value="400px">
+            </div>
+        </div>
+    </header>
+
+    <!-- ── MAIN ── -->
+    <main>
+        <!-- Left: Code Input -->
+        <div class="pane" id="input-pane">
+            <div class="pane-header">
+                <div class="pane-title">
+                    <div class="pane-title-dot"></div>
+                    Code Input
+                </div>
+                <div class="lang-select-wrapper">
+                    <span class="ctrl-label">Language</span>
+                    <select id="ctrl-lang">
+                        <option value="js">JavaScript</option>
+                        <option value="ts">TypeScript</option>
+                        <option value="python">Python</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="json">JSON</option>
+                        <option value="bash">Bash</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="code-input-wrapper">
+                <div class="line-gutter" id="line-gutter" aria-hidden="true">1</div>
+                <textarea id="code-input" spellcheck="false" autocomplete="off"
+                    autocorrect="off" autocapitalize="off"
+                    placeholder="// Paste or type your code here..."></textarea>
+            </div>
+
+            <div class="status-bar">
+                <div class="status-item"><span class="dot"></span> codUI.js plugin active</div>
+                <div class="status-item" id="status-lines">1 line</div>
+                <div class="status-item" id="status-chars">0 chars</div>
+            </div>
+        </div>
+
+        <!-- Right: Live Preview -->
+        <div class="pane preview-pane">
+            <div class="pane-header">
+                <div class="pane-title">
+                    <div class="pane-title-dot b"></div>
+                    Live Preview
+                </div>
+                <span class="ctrl-label" id="preview-tag-label">&lt;cod-ui lang="js"&gt;</span>
+            </div>
+
+            <div class="preview-canvas">
+                <div id="preview-container">
+                    <div class="empty-state">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                        <p>Start typing to see the preview</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ── EXPORT FAB ── -->
+    <button id="btn-export" title="Export Snippet">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="export-label">Export</span>
+    </button>
+
+    <!-- ── OVERLAY ── -->
+    <div id="overlay"></div>
+
+    <!-- ── EXPORT DRAWER ── -->
+    <div id="export-drawer" role="dialog" aria-label="Export Snippet">
+        <div class="drawer-header">
+            <div class="drawer-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                </svg>
+                Export Snippet
+            </div>
+            <button id="btn-close-drawer" aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="drawer-body">
+            <div>
+                <p class="drawer-step-label">Step 1 — Load the plugin</p>
+                <div class="code-block">&lt;script src="codUI.js" defer&gt;&lt;/script&gt;</div>
+            </div>
+            <div>
+                <p class="drawer-step-label">Step 2 — Paste your component</p>
+                <textarea id="export-textarea" readonly spellcheck="false"></textarea>
+            </div>
+            <button class="copy-snippet-btn" id="btn-copy-snippet">Copy Snippet</button>
+            <div class="info-card">
+                ✦ Zero dependencies. Drop <code>codUI.js</code> into any page and <code>&lt;cod-ui&gt;</code> works instantly — no build step required.
+            </div>
+        </div>
+    </div>
+
+    <!-- ── APP LOGIC ── -->
+    <script>
+        const DOM = {
+            input:          document.getElementById('code-input'),
+            container:      document.getElementById('preview-container'),
+            lang:           document.getElementById('ctrl-lang'),
+            theme:          document.getElementById('ctrl-theme'),
+            lines:          document.getElementById('ctrl-lines'),
+            width:          document.getElementById('ctrl-width'),
+            height:         document.getElementById('ctrl-height'),
+            gutter:         document.getElementById('line-gutter'),
+            statusLines:    document.getElementById('status-lines'),
+            statusChars:    document.getElementById('status-chars'),
+            previewLabel:   document.getElementById('preview-tag-label'),
+            btnExport:      document.getElementById('btn-export'),
+            drawer:         document.getElementById('export-drawer'),
+            overlay:        document.getElementById('overlay'),
+            btnCloseDrawer: document.getElementById('btn-close-drawer'),
+            exportTextarea: document.getElementById('export-textarea'),
+            btnCopySnippet: document.getElementById('btn-copy-snippet'),
+        };
+
+        // ── Starter code for every supported language ──
+        const starterCode = {
+            js: `// CodUI — JavaScript
+const fetchUserData = async (userId) => {
+    try {
+        const response = await fetch(\`/api/users/\${userId}\`);
+        const data = await response.json();
+
+        if (!data || !data.id) {
+            throw new Error('Invalid user data');
+        }
+        return { success: true, user: data };
+    } catch (err) {
+        console.error('Fetch failed:', err.message);
+        return { success: false, error: err.message };
+    }
+};
+
+export default fetchUserData;`,
+
+            ts: `// CodUI — TypeScript
+interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+async function fetchUser(id: number): Promise<ApiResponse<User>> {
+    try {
+        const res = await fetch(\`/api/users/\${id}\`);
+        if (!res.ok) throw new Error(\`HTTP \${res.status}\`);
+        const data: User = await res.json();
+        return { success: true, data };
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        return { success: false, error: msg };
+    }
+}
+
+export { fetchUser, type User, type ApiResponse };`,
+
+            python: `# CodUI — Python
+import os
+from pathlib import Path
+from typing import Optional
+
+def read_config(filepath: str) -> dict:
+    """Read and parse a key=value configuration file."""
+    config: dict = {}
+    path = Path(filepath)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Config not found: {filepath}")
+
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line and not line.startswith('#'):
+                key, value = line.split('=', 1)
+                config[key.strip()] = value.strip()
+
+    return config
+
+if __name__ == '__main__':
+    cfg = read_config('settings.conf')
+    print(cfg)`,
+
+            html: `<!-- CodUI — HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <script src="codUI.js" defer><\/script>
+</head>
+<body>
+    <h1>Hello, CodUI!</h1>
+
+    <cod-ui lang="js" theme="dracula" line-numbers="true">
+        const greet = (name) => \`Hello, \${name}!\`;
+        console.log(greet('World'));
+    </cod-ui>
+</body>
+</html>`,
+
+            css: `/* CodUI — CSS */
+:root {
+    --primary:   #212529;
+    --surface:   #343a40;
+    --accent:    #adb5bd;
+    --text:      #f8f9fa;
+    --radius:    8px;
+}
+
+.card {
+    background: var(--surface);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 768px) {
+    .card { padding: 16px; }
+}`,
+
+            json: `{
+    "name": "codui",
+    "version": "1.0.0",
+    "description": "Zero-dependency Web Component for code highlighting",
+    "main": "codUI.js",
+    "keywords": ["web-component", "syntax-highlight", "zero-dependency"],
+    "author": "CodUI Team",
+    "license": "MIT",
+    "scripts": {
+        "test": "node test.js",
+        "lint": "eslint codUI.js"
+    },
+    "devDependencies": {},
+    "config": {
+        "supported_languages": ["js", "ts", "python", "html", "css", "json", "bash"],
+        "themes": ["dark", "dracula", "glass", "light"],
+        "line_numbers": true
+    }
+}`,
+
+            bash: `#!/usr/bin/env bash
+# CodUI — Bash deploy script
+
+set -euo pipefail
+
+REPO="praTeek271/codUI"
+BRANCH="main"
+DIST_DIR="./dist"
+
+log() { echo "[$(date '+%H:%M:%S')] $*"; }
+err() { echo "[ERROR] $*" >&2; exit 1; }
+
+build() {
+    log "Building project..."
+    if [ ! -f "codUI.js" ]; then
+        err "codUI.js not found"
+    fi
+
+    mkdir -p "$DIST_DIR"
+    cp codUI.js "$DIST_DIR/"
+    log "Build complete → $DIST_DIR"
+}
+
+run_tests() {
+    log "Running tests..."
+    node test.js || err "Tests failed"
+    log "All tests passed ✓"
+}
+
+run_tests
+build
+log "Done."`
+        };
+
+        // ── Line gutter sync ──
+        function updateGutter() {
+            const lines = DOM.input.value.split('\n').length;
+            DOM.gutter.textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+            DOM.statusLines.textContent = `${lines} line${lines !== 1 ? 's' : ''}`;
+            DOM.statusChars.textContent = `${DOM.input.value.length} chars`;
+        }
+        DOM.input.addEventListener('scroll', () => { DOM.gutter.scrollTop = DOM.input.scrollTop; });
+
+        // ── Preview ──
+        function updatePreview() {
+            const lang  = DOM.lang.value;
+            const theme = DOM.theme.value;
+            const code  = DOM.input.value.trim();
+            const linesAttr = DOM.lines.checked ? ' line-numbers="true"' : '';
+            DOM.previewLabel.textContent = `<cod-ui lang="${lang}" theme="${theme}"${linesAttr}>`;
+
+            DOM.container.innerHTML = '';
+            if (!code) {
+                DOM.container.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                        <p>Start typing to see the preview</p>
+                    </div>`;
+                return;
+            }
+
+            const el = document.createElement('cod-ui');
+            el.setAttribute('lang',         lang);
+            el.setAttribute('theme',        theme);
+            el.setAttribute('line-numbers', DOM.lines.checked ? 'true' : 'false');
+            el.setAttribute('width',        DOM.width.value || '100%');
+            el.setAttribute('height',       DOM.height.value || 'auto');
+            el.textContent = DOM.input.value;
+            DOM.container.appendChild(el);
+        }
+
+        // ── Export snippet ──
+        function updateExportSnippet() {
+            const lang  = DOM.lang.value;
+            const theme = DOM.theme.value;
+            let attrs = `lang="${lang}"`;
+            if (theme !== 'dark') attrs += ` theme="${theme}"`;
+            if (DOM.lines.checked)  attrs += ` line-numbers="true"`;
+            if (DOM.width.value !== '100%') attrs += ` width="${DOM.width.value}"`;
+            if (DOM.height.value && DOM.height.value !== 'auto' && DOM.height.value !== '400px')
+                attrs += ` height="${DOM.height.value}"`;
+            DOM.exportTextarea.value = `<cod-ui ${attrs}>\n${DOM.input.value}\n</cod-ui>`;
+        }
+
+        // ── Language change — load starter ──
+        DOM.lang.addEventListener('change', () => {
+            if (!DOM.input.value.trim() || DOM.input.dataset.isStarter === 'true') {
+                DOM.input.value = starterCode[DOM.lang.value] || '';
+                DOM.input.dataset.isStarter = 'true';
+            }
+            updateGutter(); updatePreview(); updateExportSnippet();
+        });
+
+        // ── Controls ──
+        [DOM.theme, DOM.lines, DOM.width, DOM.height].forEach(c => {
+            c.addEventListener('change', () => { updatePreview(); updateExportSnippet(); });
+            c.addEventListener('input',  () => { updatePreview(); updateExportSnippet(); });
+        });
+
+        DOM.input.addEventListener('input', () => {
+            DOM.input.dataset.isStarter = 'false';
+            updateGutter(); updatePreview(); updateExportSnippet();
+        });
+
+        // ── Tab indent ──
+        DOM.input.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const s = this.selectionStart, e2 = this.selectionEnd;
+                this.value = this.value.substring(0, s) + '    ' + this.value.substring(e2);
+                this.selectionStart = this.selectionEnd = s + 4;
+                updateGutter(); updatePreview(); updateExportSnippet();
+            }
+        });
+
+        // ── Drawer ──
+        const openDrawer  = () => { updateExportSnippet(); DOM.drawer.classList.add('open');    DOM.overlay.classList.add('visible'); };
+        const closeDrawer = () => {                         DOM.drawer.classList.remove('open'); DOM.overlay.classList.remove('visible'); };
+
+        DOM.btnExport.addEventListener('click', openDrawer);
+        DOM.btnCloseDrawer.addEventListener('click', closeDrawer);
+        DOM.overlay.addEventListener('click', closeDrawer);
+
+        // ── Copy ──
+        DOM.btnCopySnippet.addEventListener('click', () => {
+            const text = DOM.exportTextarea.value;
+            const done = () => {
+                DOM.btnCopySnippet.textContent = '✓ Copied!';
+                DOM.btnCopySnippet.classList.add('copied');
+                setTimeout(() => { DOM.btnCopySnippet.textContent = 'Copy Snippet'; DOM.btnCopySnippet.classList.remove('copied'); }, 2000);
+            };
+            navigator.clipboard ? navigator.clipboard.writeText(text).then(done) : (DOM.exportTextarea.select(), document.execCommand('copy'), done());
+        });
+
+        // ── Custom animated dropdowns ──
+        (function() {
+            const ARROW_SVG = `<svg class="cs-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>`;
+
+            function buildDropdown(nativeSelect) {
+                const wrap = document.createElement('div');
+                wrap.className = 'cs-wrap';
+
+                // Trigger button
+                const trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.className = 'cs-trigger';
+
+                const label = document.createElement('span');
+                label.className = 'cs-label';
+                label.textContent = nativeSelect.options[nativeSelect.selectedIndex]?.text || '';
+
+                trigger.appendChild(label);
+                trigger.insertAdjacentHTML('beforeend', ARROW_SVG);
+                wrap.appendChild(trigger);
+
+                // Insert wrap right before the native select
+                nativeSelect.parentNode.insertBefore(wrap, nativeSelect);
+
+                let menu = null;
+
+                function openMenu() {
+                    if (menu) return;
+                    wrap.classList.add('open');
+
+                    menu = document.createElement('div');
+                    menu.className = 'cs-menu';
+
+                    Array.from(nativeSelect.options).forEach(opt => {
+                        const item = document.createElement('div');
+                        item.className = 'cs-option' + (opt.value === nativeSelect.value ? ' active' : '');
+                        item.textContent = opt.text;
+                        item.dataset.value = opt.value;
+                        item.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            nativeSelect.value = opt.value;
+                            label.textContent = opt.text;
+                            nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            closeMenu();
+                        });
+                        menu.appendChild(item);
+                    });
+
+                    wrap.appendChild(menu);
+                }
+
+                function closeMenu() {
+                    if (!menu) return;
+                    wrap.classList.remove('open');
+                    menu.remove();
+                    menu = null;
+                }
+
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu ? closeMenu() : openMenu();
+                });
+
+                document.addEventListener('click', closeMenu);
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+            }
+
+            // Build for all selects
+            document.querySelectorAll('select').forEach(buildDropdown);
+        })();
+
+        // ── Init ──
+        DOM.input.value = starterCode.js;
+        DOM.input.dataset.isStarter = 'true';
+        updateGutter(); updatePreview(); updateExportSnippet();
+    </script>
+
+</body>
+</html>

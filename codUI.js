@@ -247,37 +247,62 @@ class CodUI extends HTMLElement {
     }
 
     highlight(code, lang) {
-        code = code.replace(/(["'`])(.*?[^\\])\1/g, '<span class="string">$1$2$1</span>');
-        code = code.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="number">$1</span>');
+        // Strings (double/backtick/single)
+        code = code.replace(/(["\`])(.*?)\1/g, '<span class="string">$1$2$1</span>');
+        code = code.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="string">$1</span>');
+        // Numbers
+        code = code.replace(/\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="number">$1</span>');
 
         let keywords = [];
         let controlWords = [];
-        
+
         if (lang === 'python' || lang === 'py') {
-            keywords = ['def', 'import', 'from', 'self', 'True', 'False', 'None'];
-            controlWords = ['return', 'if', 'elif', 'else', 'in', 'for', 'while', 'try', 'except', 'with', 'as'];
+            keywords     = ['def', 'import', 'from', 'self', 'True', 'False', 'None', 'lambda', 'yield', 'pass', 'raise', 'global', 'nonlocal'];
+            controlWords = ['return', 'if', 'elif', 'else', 'in', 'not', 'and', 'or', 'for', 'while', 'try', 'except', 'finally', 'with', 'as', 'assert', 'del'];
             code = code.replace(/(#.*)/g, '<span class="comment">$1</span>');
+
         } else if (lang === 'html' || lang === 'xml') {
             code = code.replace(/(&lt;\/?)([a-zA-Z0-9\-:]+)/g, '$1<span class="tag">$2</span>');
-            code = code.replace(/(\s)([a-zA-Z0-9\-]+)(=["'])/g, '$1<span class="attr">$2</span>$3');
-            code = code.replace(/(&lt;!--.*?--&gt;)/g, '<span class="comment">$1</span>');
+            code = code.replace(/(\s)([a-zA-Z0-9\-:]+)(=["'])/g, '$1<span class="attr">$2</span>$3');
+            code = code.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="comment">$1</span>');
+
+        } else if (lang === 'css') {
+            code = code.replace(/(--[\w-]+)/g, '<span class="keyword">$1</span>');
+            code = code.replace(/([\w-]+)(?=\s*:)/g, '<span class="attr">$1</span>');
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
+
+        } else if (lang === 'json') {
+            code = code.replace(/"([^"]+)"(\s*:)/g, '<span class="attr">"$1"</span>$2');
+            code = code.replace(/\b(true|false|null)\b/g, '<span class="keyword">$1</span>');
+
+        } else if (lang === 'bash' || lang === 'sh' || lang === 'shell') {
+            keywords     = ['export', 'local', 'readonly', 'source', 'declare', 'unset', 'echo', 'set'];
+            controlWords = ['if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'do', 'done', 'case', 'esac', 'in', 'function', 'return', 'exit'];
+            code = code.replace(/(\$\{?[\w_]+\}?)/g, '<span class="number">$1</span>');
+            code = code.replace(/(#.*)/g, '<span class="comment">$1</span>');
+
         } else {
-            keywords = ['const', 'let', 'var', 'function', 'import', 'export', 'default', 'new', 'this', 'async', 'await'];
-            controlWords = ['return', 'if', 'else', 'for', 'while', 'try', 'catch', 'switch', 'case', 'break'];
+            // JS / TS (lang: js, ts, jsx, tsx)
+            keywords     = ['const', 'let', 'var', 'function', 'import', 'export', 'default', 'new', 'this',
+                            'async', 'await', 'typeof', 'instanceof',
+                            'interface', 'type', 'enum', 'namespace', 'declare', 'abstract',
+                            'implements', 'extends', 'readonly', 'keyof', 'infer', 'as'];
+            controlWords = ['return', 'if', 'else', 'for', 'while', 'try', 'catch', 'finally',
+                            'switch', 'case', 'break', 'continue', 'throw', 'of', 'in'];
             code = code.replace(/(\/\/.*)/g, '<span class="comment">$1</span>');
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
         }
 
         if (keywords.length) {
-            const kwRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
-            code = code.replace(kwRegex, '<span class="keyword">$1</span>');
+            const kwRe = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+            code = code.replace(kwRe, '<span class="keyword">$1</span>');
         }
         if (controlWords.length) {
-            const ctrlRegex = new RegExp(`\\b(${controlWords.join('|')})\\b`, 'g');
-            code = code.replace(ctrlRegex, '<span class="control">$1</span>');
+            const ctRe = new RegExp(`\\b(${controlWords.join('|')})\\b`, 'g');
+            code = code.replace(ctRe, '<span class="control">$1</span>');
         }
-        
+
         code = code.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span class="function">$1</span>');
-        
         return code;
     }
 }
