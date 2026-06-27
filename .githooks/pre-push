@@ -1,0 +1,12 @@
+#!/bin/sh
+echo "🔍 Intercepting push: running automated regression validation..."
+npm test
+EXIT_STATUS=$?
+
+if [ $EXIT_STATUS -ne 0 ]; then
+  echo "❌ Push Rejected: The test suite returned exit code $EXIT_STATUS."
+  exit $EXIT_STATUS
+fi
+
+echo "✅ All validations cleared. Proceeding to remote repository."
+exit 0

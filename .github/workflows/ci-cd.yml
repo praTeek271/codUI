@@ -1,0 +1,63 @@
+name: CodUI CI-CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*' # Trigger release actions on version tags e.g. v1.0.0
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Job 1: Quality Gate & Regression Tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v3
+        with:
+          node-with-registry: '18'
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Run Test Suite (Regression Checks)
+        run: npm test
+
+  # Job 2: Automate GitHub Releases
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v3
+
+      - name: Extract Release Notes from Changelog
+        id: extract_changelog
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Processing version: $TAG_VERSION"
+          # Sed extract block matching latest tag in CHANGELOG.md
+          RELEASE_NOTES=$(sed -n "/## \[$TAG_VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
+          # Safely encode multiline variables in GitHub Actions workflow output
+          EOF=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          echo "notes<<$EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.extract_changelog.outputs.notes }}
+          files: |
+            codUI.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

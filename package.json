@@ -1,0 +1,18 @@
+{
+  "name": "cod-ui",
+  "version": "1.0.0",
+  "description": "A lightweight, zero-dependency Web Component for code highlighting.",
+  "main": "codUI.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "web-component",
+    "syntax-highlighting",
+    "code-block",
+    "lightweight",
+    "zero-dependency"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
