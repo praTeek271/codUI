@@ -13,30 +13,30 @@ registerLanguage('bash', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
-        // 1. Hash comments (but not shebangs — treat #!/... as a comment too)
-        code = code.replace(PATTERNS.COMMENT_HASH, function (m) {
+        // 1. Comments
+        code = code.replace(PATTERNS.COMMENT_HASH(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
         // 2. Strings
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
-        // 3. Variable expansions: $VAR and ${VAR}
-        code = code.replace(PATTERNS.BASH_VAR, function (m) {
-            return '<span class="number">' + m + '</span>';
+        // 3. Variable expansions
+        code = code.replace(PATTERNS.BASH_VAR(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
-        // 4. Built-in commands / keywords
+        // 4. Keywords
         var keywords = [
             'export', 'local', 'readonly', 'source', 'declare',
             'unset', 'echo', 'printf', 'set', 'alias', 'unalias',
@@ -44,7 +44,7 @@ registerLanguage('bash', {
             'grep', 'sed', 'awk', 'curl', 'chmod', 'chown',
         ];
         code = code.replace(makeKeywordRegex(keywords), function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
         // 5. Control flow
@@ -55,11 +55,11 @@ registerLanguage('bash', {
             'return', 'exit', 'break', 'continue',
         ];
         code = code.replace(makeKeywordRegex(control), function (m) {
-            return '<span class="control">' + m + '</span>';
+            return protect('<span class="control">' + m + '</span>');
         });
 
         // 6. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }

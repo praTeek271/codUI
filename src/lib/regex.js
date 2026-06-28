@@ -3,8 +3,9 @@
  * Centralized regex pattern library for all language tokenizers.
  * Language files (src/lang/*.js) MUST use these patterns — never define inline regex.
  *
- * All RegExp objects use the global (g) flag by default.
- * Patterns that need to run in sequence are designed to be non-overlapping.
+ * Each entry is a factory function that returns a fresh RegExp.
+ * This prevents lastIndex bleed-through when the same pattern is called
+ * multiple times across different tokenize() invocations.
  */
 
 var PATTERNS = {
@@ -12,77 +13,78 @@ var PATTERNS = {
     // ── Comments ──────────────────────────────────────────────────────────────
 
     /** Hash-style single line comment: # this is a comment */
-    COMMENT_HASH:   /(#[^\n]*)/g,
+    COMMENT_HASH:    function() { return /(#[^\n]*)/g; },
 
     /** Double-slash single line comment: // this is a comment */
-    COMMENT_SLASH:  /(\/\/[^\n]*)/g,
+    COMMENT_SLASH:   function() { return /(\/\/[^\n]*)/g; },
 
     /** Block comment: /* ... *\/ */
-    COMMENT_BLOCK:  /(\/\*[\s\S]*?\*\/)/g,
+    COMMENT_BLOCK:   function() { return /(\/\*[\s\S]*?\*\/)/g; },
 
     /** HTML/XML comment: <!-- ... --> (operates on HTML-escaped source) */
-    COMMENT_HTML:   /(&lt;!--[\s\S]*?--&gt;)/g,
+    COMMENT_HTML:    function() { return /(&lt;!--[\s\S]*?--&gt;)/g; },
 
     // ── Strings ───────────────────────────────────────────────────────────────
 
     /** Double-quoted string (supports escaped quotes inside) */
-    STRING_DOUBLE:  /("(?:[^"\\]|\\.)*")/g,
+    STRING_DOUBLE:   function() { return /("(?:[^"\\]|\\.)*")/g; },
 
     /** Single-quoted string (supports escaped chars inside) */
-    STRING_SINGLE:  /('(?:[^'\\]|\\.)*')/g,
+    STRING_SINGLE:   function() { return /('(?:[^'\\]|\\.)*')/g; },
 
     /** Backtick template literal */
-    STRING_BACKTICK: /(`(?:[^`\\]|\\.)*`)/g,
+    STRING_BACKTICK: function() { return /(`(?:[^`\\]|\\.)*`)/g; },
 
     // ── Numbers ───────────────────────────────────────────────────────────────
 
     /** Integer, float, scientific notation: 42, 3.14, 1e-10 */
-    NUMBER_GENERAL: /\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g,
+    NUMBER_GENERAL: function() { return /\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g; },
 
     /** Negative numbers and JSON numbers */
-    NUMBER_JSON:    /\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g,
+    NUMBER_JSON:    function() { return /\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g; },
 
     /** CSS numbers with optional units: 12px, 1.5rem, 100%, 0.3s */
-    NUMBER_CSS:     /\b(\d+(\.\d+)?(px|rem|em|%|vh|vw|vmin|vmax|s|ms|deg|fr)?)\b/g,
+    NUMBER_CSS:     function() { return /\b(\d+(\.\d+)?(px|rem|em|%|vh|vw|vmin|vmax|s|ms|deg|fr)?)\b/g; },
 
     // ── Functions ─────────────────────────────────────────────────────────────
 
     /** Any identifier immediately followed by an opening parenthesis */
-    FUNCTION_CALL:  /\b([a-zA-Z_$][\w$]*)(?=\s*\()/g,
+    FUNCTION_CALL:  function() { return /\b([a-zA-Z_$][\w$]*)(?=\s*\()/g; },
 
     // ── HTML / XML ────────────────────────────────────────────────────────────
 
     /** Opening/closing HTML tag name (on escaped source: &lt;div) */
-    HTML_TAG:       /(&lt;\/?)([\w\-:]+)/g,
+    HTML_TAG:       function() { return /(&lt;\/?)([\w\-:]+)/g; },
 
     /** HTML attribute name (word before =) */
-    HTML_ATTR:      /\b([\w\-:]+)(?=\s*=)/g,
+    HTML_ATTR:      function() { return /\b([\w\-:]+)(?=\s*=)/g; },
 
     // ── CSS ───────────────────────────────────────────────────────────────────
 
     /** CSS custom property / variable: --primary-color */
-    CSS_VAR:        /(--[\w-]+)/g,
+    CSS_VAR:        function() { return /(--[\w-]+)/g; },
 
-    /** CSS property name (word before colon, not inside a value) */
-    CSS_PROP:       /([\w-]+)(?=\s*:)/g,
+    /** CSS property name (word before colon) */
+    CSS_PROP:       function() { return /([\w-]+)(?=\s*:)/g; },
 
     // ── JSON ──────────────────────────────────────────────────────────────────
 
     /** JSON object key: "key": (double-quoted string before a colon) */
-    JSON_KEY:       /"([^"]+)"(?=\s*:)/g,
+    JSON_KEY:       function() { return /"([^"]+)"(?=\s*:)/g; },
 
     /** JSON string value (double-quoted, NOT followed by colon) */
-    JSON_STRING:    /"([^"]+)"(?!\s*:)/g,
+    JSON_STRING:    function() { return /"([^"]+)"(?!\s*:)/g; },
 
     // ── Bash / Shell ──────────────────────────────────────────────────────────
 
     /** Bash variable expansion: $VAR or ${VAR} */
-    BASH_VAR:       /(\$\{?[\w_]+\}?)/g,
+    BASH_VAR:       function() { return /(\$\{?[\w_]+\}?)/g; },
 
 };
 
 /**
  * Builds a word-boundary regex from an array of keyword strings.
+ * Always returns a fresh RegExp instance.
  * @param {string[]} words
  * @returns {RegExp}
  */
