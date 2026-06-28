@@ -34,6 +34,7 @@ try {
     require('./codUI.js');
 } catch (error) {
     console.error("❌ System Error: Failed to import codUI.js.");
+    console.error(error);
     process.exit(2); 
 }
 
@@ -74,6 +75,34 @@ const pyInput = `# Code comment\ndef init():`;
 const resPy = componentInstance.highlight(pyInput, 'python');
 assert("Highlight python single comments", resPy.includes('<span class="comment"># Code comment</span>'), true);
 assert("Highlight functional init calls", resPy.includes('<span class="function">init</span>'), true);
+
+// Test Group 3: HTML
+console.log("\n🔹 Testing HTML Highlight Logic...");
+const htmlInput = `&lt;div class="box"&gt;`;
+const resHtml = componentInstance.highlight(htmlInput, 'html');
+assert("Highlight HTML tags", resHtml.includes('<span class="tag">div</span>'), true);
+assert("Highlight HTML attributes", resHtml.includes('<span class="attr">class</span>'), true);
+
+// Test Group 4: CSS
+console.log("\n🔹 Testing CSS Highlight Logic...");
+const cssInput = `--color: #fff;\nmargin: 10px;`;
+const resCss = componentInstance.highlight(cssInput, 'css');
+assert("Highlight CSS variables", resCss.includes('<span class="keyword">--color</span>'), true);
+assert("Highlight CSS units", resCss.includes('<span class="number">10px</span>'), true);
+
+// Test Group 5: JSON
+console.log("\n🔹 Testing JSON Highlight Logic...");
+const jsonInput = `"status": true`;
+const resJson = componentInstance.highlight(jsonInput, 'json');
+assert("Highlight JSON keys", resJson.includes('<span class="attr">"status"</span>'), true);
+assert("Highlight JSON booleans", resJson.includes('<span class="keyword">true</span>'), true);
+
+// Test Group 6: Bash
+console.log("\n🔹 Testing Bash Highlight Logic...");
+const bashInput = `echo $USER`;
+const resBash = componentInstance.highlight(bashInput, 'bash');
+assert("Highlight Bash keywords", resBash.includes('<span class="keyword">echo</span>'), true);
+assert("Highlight Bash variables", resBash.includes('<span class="number">$USER</span>'), true);
 
 console.log(`\n📊 Run Details: ${testCount} tests, ${failureCount} failures.`);
 

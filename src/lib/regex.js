@@ -17,7 +17,7 @@ var PATTERNS = {
     /** Double-slash single line comment: // this is a comment */
     COMMENT_SLASH:  /(\/\/[^\n]*)/g,
 
-    /** Block comment: /* ... */ */
+    /** Block comment: /* ... *\/ */
     COMMENT_BLOCK:  /(\/\*[\s\S]*?\*\/)/g,
 
     /** HTML/XML comment: <!-- ... --> (operates on HTML-escaped source) */
