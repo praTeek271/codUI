@@ -28,9 +28,9 @@ const ORDERED_FILES = [
     'src/lib/utils.js',
     'src/lib/regex.js',
     'src/lib/themes.js',
-    'src/lib/lang-injector.js',
+    'src/lib/languageInjector.js',
     'src/lib/highlighter.js',
-    'src/lib/ui-render.js',
+    'src/lib/uiRenderer.js',
 ];
 
 const LANG_DIR      = 'src/lang';
