@@ -64,8 +64,9 @@ function countLines(str) {
  * Centralized regex pattern library for all language tokenizers.
  * Language files (src/lang/*.js) MUST use these patterns — never define inline regex.
  *
- * All RegExp objects use the global (g) flag by default.
- * Patterns that need to run in sequence are designed to be non-overlapping.
+ * Each entry is a factory function that returns a fresh RegExp.
+ * This prevents lastIndex bleed-through when the same pattern is called
+ * multiple times across different tokenize() invocations.
  */
 
 var PATTERNS = {
@@ -73,77 +74,78 @@ var PATTERNS = {
     // ── Comments ──────────────────────────────────────────────────────────────
 
     /** Hash-style single line comment: # this is a comment */
-    COMMENT_HASH:   /(#[^\n]*)/g,
+    COMMENT_HASH:    function() { return /(#[^\n]*)/g; },
 
     /** Double-slash single line comment: // this is a comment */
-    COMMENT_SLASH:  /(\/\/[^\n]*)/g,
+    COMMENT_SLASH:   function() { return /(\/\/[^\n]*)/g; },
 
     /** Block comment: /* ... *\/ */
-    COMMENT_BLOCK:  /(\/\*[\s\S]*?\*\/)/g,
+    COMMENT_BLOCK:   function() { return /(\/\*[\s\S]*?\*\/)/g; },
 
     /** HTML/XML comment: <!-- ... --> (operates on HTML-escaped source) */
-    COMMENT_HTML:   /(&lt;!--[\s\S]*?--&gt;)/g,
+    COMMENT_HTML:    function() { return /(&lt;!--[\s\S]*?--&gt;)/g; },
 
     // ── Strings ───────────────────────────────────────────────────────────────
 
     /** Double-quoted string (supports escaped quotes inside) */
-    STRING_DOUBLE:  /("(?:[^"\\]|\\.)*")/g,
+    STRING_DOUBLE:   function() { return /("(?:[^"\\]|\\.)*")/g; },
 
     /** Single-quoted string (supports escaped chars inside) */
-    STRING_SINGLE:  /('(?:[^'\\]|\\.)*')/g,
+    STRING_SINGLE:   function() { return /('(?:[^'\\]|\\.)*')/g; },
 
     /** Backtick template literal */
-    STRING_BACKTICK: /(`(?:[^`\\]|\\.)*`)/g,
+    STRING_BACKTICK: function() { return /(`(?:[^`\\]|\\.)*`)/g; },
 
     // ── Numbers ───────────────────────────────────────────────────────────────
 
     /** Integer, float, scientific notation: 42, 3.14, 1e-10 */
-    NUMBER_GENERAL: /\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g,
+    NUMBER_GENERAL: function() { return /\b(\d+(\.\d+)?([eE][+-]?\d+)?)\b/g; },
 
     /** Negative numbers and JSON numbers */
-    NUMBER_JSON:    /\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g,
+    NUMBER_JSON:    function() { return /\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g; },
 
     /** CSS numbers with optional units: 12px, 1.5rem, 100%, 0.3s */
-    NUMBER_CSS:     /\b(\d+(\.\d+)?(px|rem|em|%|vh|vw|vmin|vmax|s|ms|deg|fr)?)\b/g,
+    NUMBER_CSS:     function() { return /\b(\d+(\.\d+)?(px|rem|em|%|vh|vw|vmin|vmax|s|ms|deg|fr)?)\b/g; },
 
     // ── Functions ─────────────────────────────────────────────────────────────
 
     /** Any identifier immediately followed by an opening parenthesis */
-    FUNCTION_CALL:  /\b([a-zA-Z_$][\w$]*)(?=\s*\()/g,
+    FUNCTION_CALL:  function() { return /\b([a-zA-Z_$][\w$]*)(?=\s*\()/g; },
 
     // ── HTML / XML ────────────────────────────────────────────────────────────
 
     /** Opening/closing HTML tag name (on escaped source: &lt;div) */
-    HTML_TAG:       /(&lt;\/?)([\w\-:]+)/g,
+    HTML_TAG:       function() { return /(&lt;\/?)([\w\-:]+)/g; },
 
     /** HTML attribute name (word before =) */
-    HTML_ATTR:      /\b([\w\-:]+)(?=\s*=)/g,
+    HTML_ATTR:      function() { return /\b([\w\-:]+)(?=\s*=)/g; },
 
     // ── CSS ───────────────────────────────────────────────────────────────────
 
     /** CSS custom property / variable: --primary-color */
-    CSS_VAR:        /(--[\w-]+)/g,
+    CSS_VAR:        function() { return /(--[\w-]+)/g; },
 
-    /** CSS property name (word before colon, not inside a value) */
-    CSS_PROP:       /([\w-]+)(?=\s*:)/g,
+    /** CSS property name (word before colon) */
+    CSS_PROP:       function() { return /([\w-]+)(?=\s*:)/g; },
 
     // ── JSON ──────────────────────────────────────────────────────────────────
 
     /** JSON object key: "key": (double-quoted string before a colon) */
-    JSON_KEY:       /"([^"]+)"(?=\s*:)/g,
+    JSON_KEY:       function() { return /"([^"]+)"(?=\s*:)/g; },
 
     /** JSON string value (double-quoted, NOT followed by colon) */
-    JSON_STRING:    /"([^"]+)"(?!\s*:)/g,
+    JSON_STRING:    function() { return /"([^"]+)"(?!\s*:)/g; },
 
     // ── Bash / Shell ──────────────────────────────────────────────────────────
 
     /** Bash variable expansion: $VAR or ${VAR} */
-    BASH_VAR:       /(\$\{?[\w_]+\}?)/g,
+    BASH_VAR:       function() { return /(\$\{?[\w_]+\}?)/g; },
 
 };
 
 /**
  * Builds a word-boundary regex from an array of keyword strings.
+ * Always returns a fresh RegExp instance.
  * @param {string[]} words
  * @returns {RegExp}
  */
@@ -593,30 +595,30 @@ registerLanguage('bash', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
-        // 1. Hash comments (but not shebangs — treat #!/... as a comment too)
-        code = code.replace(PATTERNS.COMMENT_HASH, function (m) {
+        // 1. Comments
+        code = code.replace(PATTERNS.COMMENT_HASH(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
         // 2. Strings
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
-        // 3. Variable expansions: $VAR and ${VAR}
-        code = code.replace(PATTERNS.BASH_VAR, function (m) {
-            return '<span class="number">' + m + '</span>';
+        // 3. Variable expansions
+        code = code.replace(PATTERNS.BASH_VAR(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
-        // 4. Built-in commands / keywords
+        // 4. Keywords
         var keywords = [
             'export', 'local', 'readonly', 'source', 'declare',
             'unset', 'echo', 'printf', 'set', 'alias', 'unalias',
@@ -624,7 +626,7 @@ registerLanguage('bash', {
             'grep', 'sed', 'awk', 'curl', 'chmod', 'chown',
         ];
         code = code.replace(makeKeywordRegex(keywords), function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
         // 5. Control flow
@@ -635,11 +637,11 @@ registerLanguage('bash', {
             'return', 'exit', 'break', 'continue',
         ];
         code = code.replace(makeKeywordRegex(control), function (m) {
-            return '<span class="control">' + m + '</span>';
+            return protect('<span class="control">' + m + '</span>');
         });
 
         // 6. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -664,46 +666,46 @@ registerLanguage('css', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
         // 1. Block comments
-        code = code.replace(PATTERNS.COMMENT_BLOCK, function (m) {
+        code = code.replace(PATTERNS.COMMENT_BLOCK(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
         // 2. String values
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
         // 3. CSS custom properties / variables: --primary-color
-        code = code.replace(PATTERNS.CSS_VAR, function (m) {
-            return '<span class="keyword">' + m + '</span>';
+        code = code.replace(PATTERNS.CSS_VAR(), function (m) {
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
         // 4. Numbers with optional units: 12px, 1.5rem, 100%, 0s
-        code = code.replace(PATTERNS.NUMBER_CSS, function (m) {
-            return '<span class="number">' + m + '</span>';
+        code = code.replace(PATTERNS.NUMBER_CSS(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
-        // 5. Property names: word before colon (e.g. color, margin-top)
-        code = code.replace(PATTERNS.CSS_PROP, function (m) {
-            return '<span class="attr">' + m + '</span>';
+        // 5. Property names: word before colon
+        code = code.replace(PATTERNS.CSS_PROP(), function (m) {
+            return protect('<span class="attr">' + m + '</span>');
         });
 
         // 6. At-rules: @media, @keyframes, @import, @mixin, etc.
         code = code.replace(/@[\w-]+/g, function (m) {
-            return '<span class="control">' + m + '</span>';
+            return protect('<span class="control">' + m + '</span>');
         });
 
         // 7. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -731,36 +733,36 @@ registerLanguage('html', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
         // 1. HTML comments: &lt;!-- ... --&gt;
-        code = code.replace(PATTERNS.COMMENT_HTML, function (m) {
+        code = code.replace(PATTERNS.COMMENT_HTML(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
         // 2. Attribute string values: "..." and '...'
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
         // 3. Tag names: &lt;div, &lt;/span, etc.
-        code = code.replace(PATTERNS.HTML_TAG, function (_, bracket, tagName) {
-            return bracket + '<span class="tag">' + tagName + '</span>';
+        code = code.replace(PATTERNS.HTML_TAG(), function (_, bracket, tagName) {
+            return bracket + protect('<span class="tag">' + tagName + '</span>');
         });
 
         // 4. Attribute names: word immediately before =
-        code = code.replace(PATTERNS.HTML_ATTR, function (m) {
-            return '<span class="attr">' + m + '</span>';
+        code = code.replace(PATTERNS.HTML_ATTR(), function (m) {
+            return protect('<span class="attr">' + m + '</span>');
         });
 
         // 5. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -785,38 +787,36 @@ registerLanguage('javascript', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
-        // 1. Block comments first (protect from string pass)
-        code = code.replace(PATTERNS.COMMENT_BLOCK, function (m) {
+        // 1. Comments
+        code = code.replace(PATTERNS.COMMENT_BLOCK(), function (m) {
+            return protect('<span class="comment">' + m + '</span>');
+        });
+        code = code.replace(PATTERNS.COMMENT_SLASH(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
-        // 2. Single-line comments
-        code = code.replace(PATTERNS.COMMENT_SLASH, function (m) {
-            return protect('<span class="comment">' + m + '</span>');
-        });
-
-        // 3. Strings — protect before keyword pass
-        code = code.replace(PATTERNS.STRING_BACKTICK, function (m) {
+        // 2. Strings
+        code = code.replace(PATTERNS.STRING_BACKTICK(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
-        // 4. Numbers (safe — comments & strings are protected)
-        code = code.replace(PATTERNS.NUMBER_GENERAL, function (m) {
-            return '<span class="number">' + m + '</span>';
+        // 3. Numbers
+        code = code.replace(PATTERNS.NUMBER_GENERAL(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
-        // 5. Keywords
+        // 4. Keywords
         var keywords = [
             'const', 'let', 'var', 'function', 'class', 'extends', 'super', 'static',
             'new', 'this', 'import', 'export', 'default', 'from', 'as',
@@ -825,25 +825,25 @@ registerLanguage('javascript', {
             'implements', 'readonly', 'keyof', 'infer', 'in', 'of',
         ];
         code = code.replace(makeKeywordRegex(keywords), function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
-        // 6. Control flow
+        // 5. Control flow
         var control = [
             'return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case',
             'break', 'continue', 'throw', 'try', 'catch', 'finally', 'yield',
         ];
         code = code.replace(makeKeywordRegex(control), function (m) {
-            return '<span class="control">' + m + '</span>';
+            return protect('<span class="control">' + m + '</span>');
         });
 
-        // 7. Function calls
-        code = code.replace(PATTERNS.FUNCTION_CALL, function (m) {
-            return '<span class="function">' + m + '</span>';
+        // 6. Function calls
+        code = code.replace(PATTERNS.FUNCTION_CALL(), function (m) {
+            return protect('<span class="function">' + m + '</span>');
         });
 
-        // 8. Restore all protected tokens
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        // 7. Restore all protected tokens
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -868,33 +868,33 @@ registerLanguage('json', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
         // 1. Object keys: "key": — must come before string values
-        code = code.replace(PATTERNS.JSON_KEY, function (_, key) {
+        code = code.replace(PATTERNS.JSON_KEY(), function (_, key) {
             return protect('<span class="attr">"' + key + '"</span>');
         });
 
-        // 2. String values: "value" (not before colon — already handled above)
-        code = code.replace(PATTERNS.JSON_STRING, function (m) {
+        // 2. String values: "value"
+        code = code.replace(PATTERNS.JSON_STRING(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
         // 3. Keywords: true, false, null
         code = code.replace(makeKeywordRegex(['true', 'false', 'null']), function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
-        // 4. Numbers (including negative and float)
-        code = code.replace(PATTERNS.NUMBER_JSON, function (m) {
-            return '<span class="number">' + m + '</span>';
+        // 4. Numbers
+        code = code.replace(PATTERNS.NUMBER_JSON(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
         // 5. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -919,12 +919,12 @@ registerLanguage('python', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00' + store.length + '\x00';
+            var id = '\x00T' + store.length + 'T\x00';
             store.push(html);
             return id;
         }
 
-        // 1. Triple-quoted strings (must come before single-line strings)
+        // 1. Triple-quoted strings
         code = code.replace(/"""([\s\S]*?)"""/g, function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
@@ -932,22 +932,22 @@ registerLanguage('python', {
             return protect('<span class="string">' + m + '</span>');
         });
 
-        // 2. Hash comments (protect before string pass)
-        code = code.replace(PATTERNS.COMMENT_HASH, function (m) {
+        // 2. Hash comments
+        code = code.replace(PATTERNS.COMMENT_HASH(), function (m) {
             return protect('<span class="comment">' + m + '</span>');
         });
 
         // 3. Single-line strings
-        code = code.replace(PATTERNS.STRING_DOUBLE, function (m) {
+        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
-        code = code.replace(PATTERNS.STRING_SINGLE, function (m) {
+        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
             return protect('<span class="string">' + m + '</span>');
         });
 
         // 4. Numbers
-        code = code.replace(PATTERNS.NUMBER_GENERAL, function (m) {
-            return '<span class="number">' + m + '</span>';
+        code = code.replace(PATTERNS.NUMBER_GENERAL(), function (m) {
+            return protect('<span class="number">' + m + '</span>');
         });
 
         // 5. Keywords
@@ -957,7 +957,7 @@ registerLanguage('python', {
             'del', 'assert', 'True', 'False', 'None', 'self', 'cls',
         ];
         code = code.replace(makeKeywordRegex(keywords), function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
         // 6. Control flow
@@ -967,21 +967,21 @@ registerLanguage('python', {
             'or', 'is', 'break', 'continue', 'async', 'await',
         ];
         code = code.replace(makeKeywordRegex(control), function (m) {
-            return '<span class="control">' + m + '</span>';
+            return protect('<span class="control">' + m + '</span>');
         });
 
         // 7. Decorators (@decorator)
         code = code.replace(/@([\w.]+)/g, function (m) {
-            return '<span class="keyword">' + m + '</span>';
+            return protect('<span class="keyword">' + m + '</span>');
         });
 
         // 8. Function calls
-        code = code.replace(PATTERNS.FUNCTION_CALL, function (m) {
-            return '<span class="function">' + m + '</span>';
+        code = code.replace(PATTERNS.FUNCTION_CALL(), function (m) {
+            return protect('<span class="function">' + m + '</span>');
         });
 
         // 9. Restore
-        return code.replace(/\x00(\d+)\x00/g, function (_, i) {
+        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
             return store[+i];
         });
     }
@@ -1020,6 +1020,17 @@ class CodUI extends HTMLElement {
 
     attributeChangedCallback() {
         this.render();
+    }
+
+    /**
+     * Public API: Programmatically highlight code string.
+     */
+    highlight(code, lang) {
+        return highlight(code, lang);
+    }
+
+    static highlight(code, lang) {
+        return highlight(code, lang);
     }
 
     render() {
