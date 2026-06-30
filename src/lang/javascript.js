@@ -1,6 +1,16 @@
 /**
  * src/lang/javascript.js
- * Syntax rules for JavaScript and TypeScript.
+ * Syntax rules for JavaScript and TypeScript (ES2022+).
+ *
+ * Token processing order (important — each step protects its output):
+ *   1. Block comments   /* ... *\/
+ *   2. Line comments    // ...
+ *   3. Template strings `...`
+ *   4. Strings          "..." / '...'
+ *   5. Numbers          42, 3.14, 1e-10
+ *   6. Keywords         const, class, import, async, ...
+ *   7. Control flow     if, for, return, try, ...
+ *   8. Function calls   identifier(
  *
  * Aliases: js, ts, jsx, tsx, typescript
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)

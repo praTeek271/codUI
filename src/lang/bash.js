@@ -1,6 +1,13 @@
 /**
  * src/lang/bash.js
- * Syntax rules for Bash, Shell scripts.
+ * Syntax rules for Bash and POSIX Shell scripts.
+ *
+ * Token processing order (important — each step protects its output):
+ *   1. Comments       # ... (includes shebangs #!/usr/bin/env bash)
+ *   2. Strings        "..." / '...'
+ *   3. Variables      $VAR / ${VAR}
+ *   4. Keywords       echo, export, cd, grep, ...
+ *   5. Control flow   if/then/fi, for/do/done, case/esac, ...
  *
  * Aliases: sh, shell
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)

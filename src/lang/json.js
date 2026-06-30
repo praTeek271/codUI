@@ -1,6 +1,14 @@
 /**
  * src/lang/json.js
- * Syntax rules for JSON.
+ * Syntax rules for JSON (RFC 8259).
+ *
+ * Token processing order (important — each step protects its output):
+ *   1. Keys    "key":  (JSON_KEY pattern — must run BEFORE JSON_STRING)
+ *   2. Strings "value" (JSON_STRING pattern — NOT followed by colon)
+ *   3. Keywords  true / false / null
+ *   4. Numbers   42, -1, 3.14, 1e-10
+ *
+ * Note: Keys and values use different patterns to avoid cross-matching.
  *
  * Aliases: none
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)

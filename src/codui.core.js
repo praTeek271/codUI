@@ -1,14 +1,23 @@
 /**
  * src/codui.core.js
- * CodUI Web Component definition.
+ * CodUI Web Component entry point.
  *
- * This is the entry point class. It coordinates attributes, handles
- * component lifecycle, and triggers rendering and copy logic.
+ * Defines the <cod-ui> custom element and coordinates the full
+ * rendering pipeline: attribute parsing → escape → highlight → render.
+ *
+ * Lifecycle:
+ *   connectedCallback()      — fires on DOM insert, triggers initial render
+ *   attributeChangedCallback — fires on attr change, re-renders
+ *   observedAttributes       — theme, lang, line-numbers, width, height
+ *
+ * Public API:
+ *   instance.highlight(code, lang) — highlight a code string directly
+ *   CodUI.highlight(code, lang)    — static version for tooling/testing
  *
  * Depends on:
- *   - utils.js (stripNewlines, escapeHTML)
- *   - highlighter.js (highlight)
- *   - uiRenderer.js (renderComponent)
+ *   utils.js       (stripNewlines, escapeHTML)
+ *   highlighter.js (highlight)
+ *   uiRenderer.js  (renderComponent)
  */
 
 class CodUI extends HTMLElement {

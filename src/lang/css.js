@@ -2,6 +2,14 @@
  * src/lang/css.js
  * Syntax rules for CSS, SCSS, and Less.
  *
+ * Token processing order (important — each step protects its output):
+ *   1. Block comments      /* ... *\/
+ *   2. Strings             "..." / '...'
+ *   3. CSS variables       --property-name
+ *   4. Numbers with units  12px, 1.5rem, 100%, 0.3s
+ *   5. Property names      word before colon
+ *   6. At-rules            @media, @keyframes, @mixin ...
+ *
  * Aliases: scss, less
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)
  */

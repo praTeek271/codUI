@@ -2,8 +2,15 @@
  * src/lang/html.js
  * Syntax rules for HTML and XML.
  *
- * Note: code arrives HTML-escaped — < is &lt;, > is &gt;, & is &amp;
- * All tag/comment patterns must account for this.
+ * IMPORTANT: Code arrives pre-escaped from escapeHTML():
+ *   <  →  &lt;     >  →  &gt;     &  →  &amp;
+ * All patterns in this file operate on the escaped form.
+ *
+ * Token processing order (important — each step protects its output):
+ *   1. HTML comments    &lt;!-- ... --&gt;
+ *   2. Strings          attribute values "..." / '...'
+ *   3. Tag names        &lt;div, &lt;/span
+ *   4. Attribute names  word before =
  *
  * Aliases: xml
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)

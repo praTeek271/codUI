@@ -1,6 +1,16 @@
 /**
  * src/lang/python.js
- * Syntax rules for Python.
+ * Syntax rules for Python 3.
+ *
+ * Token processing order (important — each step protects its output):
+ *   1. Triple-quoted strings  """...""" / '''...'''
+ *   2. Hash comments          # ...
+ *   3. Strings                "..." / '...'
+ *   4. Numbers                42, 3.14, 1e-10
+ *   5. Keywords               def, class, import, True, None, ...
+ *   6. Control flow           if, elif, for, while, try, ...
+ *   7. Decorators             @decorator
+ *   8. Function calls         identifier(
  *
  * Aliases: py
  * Depends on: PATTERNS, makeKeywordRegex (regex.js), registerLanguage (languageInjector.js)
