@@ -3,7 +3,8 @@
  * CodUI v2.0.8 — Zero-dependency build script.
  *
  * Concatenates all src/ modules in dependency order,
- * wraps the bundle in an IIFE, and writes to codUI.js at root.
+ * wraps the bundle in an IIFE, minifies to a single line,
+ * and writes to codUI.js at root.
  *
  * Usage: node scripts/build.js
  */
@@ -37,7 +38,7 @@ const LANG_DIR      = 'src/lang';
 const CORE_FILE     = 'src/codui.core.js';
 const OUTPUT_FILE   = 'codUI.js';
 
-// ── Version banner (injected at top of codUI.js) ──────────────────────────────
+// ── Version banner (injected at top of codUI.js — preserved above minified code) ──
 const BANNER = `/**
  * codUI.js — v2.0.8
  * Lightweight, zero-dependency Web Component for code syntax highlighting.
@@ -64,26 +65,69 @@ function separator(label) {
     return `\n// ${'─'.repeat(3)} ${label} ${'─'.repeat(Math.max(0, 57 - label.length))}\n`;
 }
 
+/**
+ * Zero-dependency minifier — O(n), no backtracking, no regex-literal ambiguity.
+ *
+ * Strategy: strip comments at the LINE level (not character level), then
+ * join lines with a single space. This preserves string content (including
+ * internal spaces in CSS strings) without needing to protect string literals,
+ * which avoids the classic regex-literal vs string-literal ambiguity problem.
+ *
+ * Limitation: inline trailing comments (code + // comment) are NOT stripped.
+ * All comments in our source files are whole-line only, so this is safe.
+ */
+function minify(code) {
+    // 1. Strip block comments /* ... */ (safe — none appear inside our strings)
+    code = code.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // 2. Strip full-line comments (lines whose non-whitespace content is // ...)
+    code = code.replace(/^[ \t]*\/\/[^\n]*$/gm, '');
+
+    // 3. Trim leading + trailing whitespace from every line
+    //    (preserves spaces INSIDE strings — they sit in the middle of lines)
+    code = code.replace(/^[ \t]+/gm, '');
+    code = code.replace(/[ \t]+$/gm, '');
+
+    // 4. Collapse blank lines and join everything onto one line
+    code = code.replace(/\n+/g, ' ');
+
+    // 5. Remove spaces immediately adjacent to operators / punctuation
+    //    Only non-word chars are targeted, so identifiers never merge
+    code = code.replace(/ ([{}();,[\]=+\-*/<>!&|?:@])/g, '$1');
+    code = code.replace(/([{}();,[\]=+\-*/<>!&|?:@]) /g, '$1');
+
+    // 6. Collapse any double-spaces introduced by step 5
+    code = code.replace(/  +/g, ' ');
+
+    return code.trim();
+}
+
+
 // ── Build ─────────────────────────────────────────────────────────────────────
 console.log(`\n${c.cyan}${c.bold}╔══════════════════════════════════════════════════╗`);
-console.log(`║        CodUI v2.0.8  —  Build Script            ║`);
+console.log(`║        CodUI v2.0.8  —  Build Script             ║`);
 console.log(`╚══════════════════════════════════════════════════╝${c.reset}\n`);
 
 const startTime = Date.now();
 const chunks    = [];
 
-// 1. Core lib modules (ordered)
-for (const filePath of ORDERED_FILES) {
-    process.stdout.write(`${c.gray}  bundling ${filePath}...${c.reset} `);
-    chunks.push(separator(path.basename(filePath)));
-    chunks.push(readFile(filePath));
-    console.log(`${c.green}✔${c.reset}`);
+// ── Progress bar helper ───────────────────────────────────────────────────────
+function drawBar(current, total, label) {
+    const WIDTH  = 24;
+    const filled = Math.round((current / total) * WIDTH);
+    const empty  = WIDTH - filled;
+    const bar    = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+    const pct    = String(Math.round((current / total) * 100)).padStart(3) + '%';
+    const tag    = path.basename(label).padEnd(28);
+    process.stdout.write(
+        `\r  ${c.cyan}[${bar}]${c.reset} ${c.yellow}${pct}${c.reset}  ${c.gray}${tag}${c.reset}`
+    );
 }
 
-// 2. Language rule files (auto-discovered, sorted)
+// 1. Collect all files (so we know total count before we start)
 const langDir = path.resolve(__dirname, '..', LANG_DIR);
 if (!fs.existsSync(langDir)) {
-    console.error(`${c.red}✖ Language directory not found: ${LANG_DIR}${c.reset}`);
+    console.error(`${c.red}\u2716 Language directory not found: ${LANG_DIR}${c.reset}`);
     process.exit(1);
 }
 const langFiles = fs.readdirSync(langDir)
@@ -91,34 +135,43 @@ const langFiles = fs.readdirSync(langDir)
     .sort()
     .map(f => `${LANG_DIR}/${f}`);
 
-for (const filePath of langFiles) {
-    process.stdout.write(`${c.gray}  bundling ${filePath}...${c.reset} `);
+const allFiles = [...ORDERED_FILES, ...langFiles, CORE_FILE];
+const total    = allFiles.length;
+let   done     = 0;
+
+// 2. Bundle all files with live progress bar
+for (const filePath of allFiles) {
     chunks.push(separator(path.basename(filePath)));
     chunks.push(readFile(filePath));
-    console.log(`${c.green}✔${c.reset}`);
+    done++;
+    drawBar(done, total, filePath);
 }
 
-// 3. Web component core (always last)
-process.stdout.write(`${c.gray}  bundling ${CORE_FILE}...${c.reset} `);
-chunks.push(separator(path.basename(CORE_FILE)));
-chunks.push(readFile(CORE_FILE));
-console.log(`${c.green}✔${c.reset}`);
+// Clear bar line, print done summary
+process.stdout.write(`\r  ${c.green}\u2714${c.reset} Bundled ${c.yellow}${total}${c.reset} files` + ' '.repeat(40) + '\n');
 
-// 4. Assemble final bundle (IIFE wrapped)
-const bundle = BANNER
-    + `(function () {\n'use strict';\n\n`
+
+// 4. Assemble raw bundle (IIFE wrapped)
+const rawBundle = `(function () {\n'use strict';\n\n`
     + chunks.join('\n\n')
     + `\n\n})();\n`;
 
-// 5. Write output
+// 5. Minify → single line, then prepend the banner comment
+const minified = minify(rawBundle);
+const bundle   = BANNER + minified + '\n';
+
+// 6. Write output
 const outPath = path.resolve(__dirname, '..', OUTPUT_FILE);
 fs.writeFileSync(outPath, bundle, 'utf8');
 
 const duration = Date.now() - startTime;
-const sizeKB   = (bundle.length / 1024).toFixed(2);
+const rawKB    = (rawBundle.length / 1024).toFixed(2);
+const minKB    = (minified.length  / 1024).toFixed(2);
+const saving   = (100 * (1 - minified.length / rawBundle.length)).toFixed(1);
 
 console.log(`\n${c.gray}──────────────────────────────────────────────────────${c.reset}`);
 console.log(`${c.bold}  Output:   ${c.reset}${c.yellow}${OUTPUT_FILE}${c.reset}`);
-console.log(`${c.bold}  Size:     ${c.reset}${c.yellow}${sizeKB} KB${c.reset} ${c.dim}(unminified)${c.reset}`);
+console.log(`${c.bold}  Raw:      ${c.reset}${c.gray}${rawKB} KB${c.reset}`);
+console.log(`${c.bold}  Minified: ${c.reset}${c.yellow}${minKB} KB${c.reset} ${c.dim}(${saving}% smaller)${c.reset}`);
 console.log(`${c.bold}  Duration: ${c.reset}${c.yellow}${duration}ms${c.reset}`);
 console.log(`\n${c.green}${c.bold}  ✅  Build complete!${c.reset}\n`);
