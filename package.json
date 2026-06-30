@@ -4,7 +4,8 @@
   "description": "A lightweight, zero-dependency Web Component for code highlighting.",
   "main": "codUI.js",
   "scripts": {
-    "test": "node test.js"
+    "build": "node scripts/build.js",
+    "test": "npm run build && node test.js"
   },
   "keywords": [
     "web-component",
