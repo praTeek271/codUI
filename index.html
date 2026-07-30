@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodUI — Web Component Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet" />
+  <script src="codUI.js" defer></script>
+  <style>
+    /* ══════════════════════════════
+   TOKENS
+══════════════════════════════ */
+    :root {
+      --purple: #7c6bff;
+      --purple2: #6c5ce7;
+      --cyan: #38bdf8;
+      --green: #4ade80;
+      --pink: #f472b6;
+      --amber: #fbbf24;
+    }
+
+    [data-theme="dark"] {
+      --bg: #07070f;
+      --bg2: #0c0c18;
+      --surface: rgba(16, 16, 32, 0.72);
+      --surface2: rgba(20, 20, 40, 0.88);
+      --border: rgba(124, 107, 255, 0.12);
+      --border2: rgba(124, 107, 255, 0.24);
+      --text: #e8eaf6;
+      --text2: #7986cb;
+      --text3: #3d4478;
+      --ripple: rgba(124, 107, 255, 0.4);
+      --blur-bg: rgba(7, 7, 15, 0.96);
+      --ray-col: 124, 107, 255;
+    }
+
+    [data-theme="light"] {
+      --bg: #eef2ff;
+      --bg2: #e5ebff;
+      --surface: rgba(255, 255, 255, 0.68);
+      --surface2: rgba(238, 242, 255, 0.90);
+      --border: rgba(108, 92, 231, 0.13);
+      --border2: rgba(108, 92, 231, 0.26);
+      --text: #1a1a3e;
+      --text2: #4a4a8a;
+      --text3: #9090c0;
+      --ripple: rgba(108, 92, 231, 0.3);
+      --blur-bg: rgba(238, 242, 255, 0.96);
+      --ray-col: 108, 92, 231;
+    }
+
+    /* ══════════════════════════════
+   RESET
+══════════════════════════════ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    body.loading {
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════
+   LOADER
+══════════════════════════════ */
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--blur-bg);
+      overflow: hidden;
+      pointer-events: all;
+      transition: opacity 0.7s ease, visibility 0.7s ease;
+    }
+
+    #loader.done {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* hero fish container */
+    #hero-fish-wrap {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      left: -140px;
+      width: 110px;
+      height: 84px;
+      z-index: 3;
+      will-change: transform, left;
+    }
+
+    /* swarm container — behind hero fish */
+    #swarm-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* directional blur overlay — clips left→right via JS */
+    #blur-wipe {
+      position: fixed;
+      inset: 0;
+      z-index: 8998;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      clip-path: inset(0 0 0 0%);
+      pointer-events: none;
+      will-change: clip-path;
+    }
+
+    /* ══════════════════════════════
+   AQUARIUM BG
+══════════════════════════════ */
+    #aquarium {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    #aqua-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ══════════════════════════════
+   CONTENT
+══════════════════════════════ */
+    #content {
+      position: relative;
+      z-index: 10;
+    }
+
+    /* ══════════════════════════════
+   NAV
+══════════════════════════════ */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      background: var(--surface2);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.4s;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none
+    }
+
+    .nav-wm {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .nav-wm span {
+      color: var(--purple)
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none
+    }
+
+    .nav-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      text-decoration: none;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--purple)
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+
+    .nav-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--green);
+      background: rgba(74, 222, 128, 0.08);
+      border: 1px solid rgba(74, 222, 128, 0.18);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    #theme-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    #theme-btn:hover {
+      background: var(--surface2)
+    }
+
+    /* ══════════════════════════════
+   HERO
+══════════════════════════════ */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 48px 60px;
+    }
+
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 28px;
+    }
+
+    .hero-title {
+      font-size: clamp(52px, 9vw, 108px);
+      font-weight: 800;
+      line-height: 0.95;
+      letter-spacing: -3px;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .hero-title span {
+      color: var(--purple)
+    }
+
+    .hero-subtitle {
+      font-size: clamp(20px, 3vw, 38px);
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: -0.8px;
+      line-height: 1.2;
+      margin-bottom: 0;
+    }
+
+    /* these are hidden on load, revealed on scroll.
+   max-height + overflow:hidden keeps them out of layout flow
+   (height:0) so the eyebrow/title/subtitle stay truly centered,
+   then they grow open + fade in on reveal. */
+    .hero-reveal {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(20px);
+      margin-top: 0;
+      transition: max-height 0.7s ease, opacity 0.6s ease, transform 0.6s ease, margin-top 0.7s ease;
+    }
+
+    .hero-reveal.show {
+      max-height: 300px;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 28px;
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      line-height: 1.75;
+      color: var(--text2);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .btn-p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--purple);
+      border: none;
+      border-radius: 10px;
+      padding: 14px 28px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-p:hover {
+      background: var(--purple2);
+      transform: translateY(-2px)
+    }
+
+    .btn-s {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 14px 28px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, transform 0.15s;
+    }
+
+    .btn-s:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+      transform: translateY(-2px)
+    }
+
+    .install-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 14px 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    .install-box code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--cyan);
+    }
+
+    .copy-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text3);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 11px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: var(--purple);
+      border-color: var(--purple)
+    }
+
+    /* ══════════════════════════════
+   SECTIONS
+══════════════════════════════ */
+    section {
+      padding: 100px 48px;
+      max-width: 1100px;
+      margin: 0 auto
+    }
+
+    .section-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.05;
+    }
+
+    .section-body {
+      font-size: 16px;
+      color: var(--text2);
+      line-height: 1.8;
+      max-width: 600px;
+    }
+
+    .divider {
+      width: calc(100% - 96px);
+      max-width: 1004px;
+      height: 1px;
+      background: var(--border);
+      margin: 0 auto;
+    }
+
+    /* ══════════════════════════════
+   CARDS — ripple entry
+══════════════════════════════ */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 56px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      opacity: 0;
+      transform: translateY(30px);
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    }
+
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .card:hover {
+      border-color: var(--border2);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(124, 107, 255, 0.08);
+    }
+
+    /* ripple */
+    .ripple-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--ripple);
+      pointer-events: none;
+      transform: scale(0);
+      opacity: 1;
+      animation: ripple-out 1s ease-out forwards;
+    }
+
+    @keyframes ripple-out {
+      0% {
+        transform: scale(0);
+        opacity: 0.9
+      }
+
+      100% {
+        transform: scale(10);
+        opacity: 0
+      }
+    }
+
+    .card-icon {
+      width: 46px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(124, 107, 255, 0.09);
+      border: 1px solid rgba(124, 107, 255, 0.18);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.7
+    }
+
+    /* ══════════════════════════════
+   CODE WINDOW
+══════════════════════════════ */
+    .code-window {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      overflow: hidden;
+      margin-top: 48px;
+      backdrop-filter: blur(16px);
+    }
+
+    .code-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%
+    }
+
+    .dot-r {
+      background: #ff5f57
+    }
+
+    .dot-y {
+      background: #febc2e
+    }
+
+    .dot-g {
+      background: #28c840
+    }
+
+    .code-fname {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+      margin-left: 8px;
+    }
+
+    .code-body {
+      display: flex;
+      overflow-x: auto
+    }
+
+    .lnums {
+      padding: 22px 14px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 46px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .ln {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text3);
+      line-height: 1.7;
+      user-select: none;
+    }
+
+    .clines {
+      padding: 22px 28px;
+      flex: 1
+    }
+
+    .cl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre;
+    }
+
+    .t-tag {
+      color: #f472b6
+    }
+
+    .t-attr {
+      color: var(--cyan)
+    }
+
+    .t-val {
+      color: var(--green)
+    }
+
+    .t-punct {
+      color: var(--text3)
+    }
+
+    .t-comment {
+      color: var(--text3);
+      font-style: italic
+    }
+
+    .t-text {
+      color: var(--text2)
+    }
+
+    /* ══════════════════════════════
+   THEMES STRIP
+══════════════════════════════ */
+    .themes-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .theme-pill {
+      border-radius: 14px;
+      padding: 22px 20px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .theme-pill:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px)
+    }
+
+    .th-dark {
+      background: rgba(13, 17, 23, 0.85)
+    }
+
+    .th-light {
+      background: rgba(248, 248, 242, 0.85)
+    }
+
+    .th-dracula {
+      background: rgba(40, 42, 54, 0.85)
+    }
+
+    .th-glass {
+      background: rgba(255, 255, 255, 0.04)
+    }
+
+    .theme-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .th-dark .theme-name {
+      color: #58a6ff
+    }
+
+    .th-light .theme-name {
+      color: #6c5ce7
+    }
+
+    .th-dracula .theme-name {
+      color: #bd93f9
+    }
+
+    .th-glass .theme-name {
+      color: #7c6bff
+    }
+
+    .theme-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .tl {
+      height: 6px;
+      border-radius: 3px
+    }
+
+    /* ══════════════════════════════
+   STEPS
+══════════════════════════════ */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      margin-top: 48px
+    }
+
+    .step {
+      display: flex;
+      gap: 28px;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step:last-child {
+      border-bottom: none
+    }
+
+    .step-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--purple);
+      background: rgba(124, 107, 255, 0.08);
+      border: 1px solid rgba(124, 107, 255, 0.2);
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.7;
+      margin-bottom: 12px
+    }
+
+    .icode {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--cyan);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      display: inline-block;
+    }
+
+    /* ══════════════════════════════
+   FOOTER
+══════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      background: var(--surface2);
+      backdrop-filter: blur(20px);
+    }
+
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px
+    }
+
+    .footer-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--purple)
+    }
+
+    /* ══════════════════════════════
+   RESPONSIVE — MOBILE
+══════════════════════════════ */
+    @media (max-width: 768px) {
+      nav {
+        padding: 0 20px;
+        height: 58px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-badge {
+        display: none;
+      }
+
+      .hero {
+        padding: 64px 20px 48px;
+        min-height: 80vh;
+      }
+
+      .hero-eyebrow {
+        font-size: 9px;
+        letter-spacing: 2.5px;
+        margin-bottom: 18px;
+      }
+
+      .hero-title {
+        letter-spacing: -1.5px;
+      }
+
+      .hero-subtitle {
+        font-size: clamp(18px, 5vw, 26px);
+      }
+
+      .hero-desc {
+        font-size: 15px;
+        padding: 0 4px;
+      }
+
+      .hero-cta {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .btn-p,
+      .btn-s {
+        width: 100%;
+        text-align: center;
+      }
+
+      .install-box {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      section {
+        padding: 64px 20px;
+      }
+
+      .section-title {
+        letter-spacing: -0.8px;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 40px;
+      }
+
+      .card {
+        padding: 24px;
+      }
+
+      .themes-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .theme-pill {
+        padding: 16px;
+      }
+
+      .code-window {
+        border-radius: 14px;
+      }
+
+      .code-fname {
+        display: none;
+      }
+
+      .clines,
+      .lnums {
+        padding: 16px;
+      }
+
+      .cl,
+      .ln {
+        font-size: 11px;
+      }
+
+      .step {
+        gap: 18px;
+        padding: 24px 0;
+      }
+
+      .step-num {
+        width: 30px;
+        height: 30px;
+        font-size: 10px;
+      }
+
+      footer {
+        padding: 32px 20px;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .footer-links {
+        gap: 18px;
+      }
+
+      /* hero fish + loader scale down */
+      #hero-fish-wrap {
+        width: 78px !important;
+        height: 60px !important;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .hero-title {
+        font-size: clamp(40px, 14vw, 56px);
+      }
+
+      .install-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .install-box code {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+<body class="loading">
+
+  <!-- ══════ LOADER ══════ -->
+  <div id="loader">
+    <!-- Hero geo fish -->
+    <div id="hero-fish-wrap">
+      <svg id="hero-svg" width="110" height="84" viewBox="0 0 68 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="14" y="10" width="44" height="32" rx="13" stroke="#7c6bff" stroke-width="2.2"
+          fill="rgba(124,107,255,0.10)" />
+        <path d="M14 26L5 17" stroke="#7c6bff" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M14 26L5 35" stroke="#7c6bff" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M5 17C6 20 7 23 7 26C7 29 6 32 5 35" stroke="#7c6bff" stroke-width="1.6" stroke-linecap="round" />
+        <!-- eye — animated via JS for blink -->
+        <ellipse id="hero-eye" cx="50" cy="19" rx="2.8" ry="2.8" fill="#7c6bff" />
+        <path d="M22 20C25 18 30 18 33 19.5" stroke="#7c6bff" stroke-width="1.3" stroke-linecap="round" />
+        <path d="M21 26C24 25 29 25 32 26" stroke="#7c6bff" stroke-width="1.3" stroke-linecap="round" />
+        <path d="M22 32C25 33 30 33 33 31.5" stroke="#7c6bff" stroke-width="1.3" stroke-linecap="round" />
+        <path d="M27 10C28 17 29 21 29 26C29 31 28 35 27 42" stroke="#7c6bff" stroke-width="1.5"
+          stroke-linecap="round" />
+      </svg>
+    </div>
+    <!-- Swarm fish injected here by JS -->
+    <div id="swarm-layer"></div>
+  </div>
+
+  <!-- Directional blur wipe -->
+  <div id="blur-wipe"></div>
+
+  <!-- ══════ AQUARIUM ══════ -->
+  <div id="aquarium">
+    <canvas id="aqua-canvas"></canvas>
+  </div>
+
+  <!-- ══════ PAGE CONTENT ══════ -->
+  <div id="content">
+    <nav>
+      <a class="nav-logo" href="#">
+        <svg width="32" height="24" viewBox="0 0 68 52" fill="none">
+          <rect x="14" y="10" width="44" height="32" rx="13" stroke="#7c6bff" stroke-width="2.8" fill="none" />
+          <path d="M14 26L5 17" stroke="#7c6bff" stroke-width="2.8" stroke-linecap="round" />
+          <path d="M14 26L5 35" stroke="#7c6bff" stroke-width="2.8" stroke-linecap="round" />
+          <path d="M5 17C6 20 7 23 7 26C7 29 6 32 5 35" stroke="#7c6bff" stroke-width="2" stroke-linecap="round" />
+          <circle cx="50" cy="19" r="2.4" fill="#7c6bff" />
+          <path d="M27 10C28 17 29 21 29 26C29 31 28 35 27 42" stroke="#7c6bff" stroke-width="1.8"
+            stroke-linecap="round" />
+        </svg>
+        <span class="nav-wm"><span>Cod</span>UI</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#themes">Themes</a></li>
+        <li><a href="#start">Get Started</a></li>
+      </ul>
+      <div class="nav-right">
+        <span class="nav-badge">v1.0.0</span>
+        <button id="theme-btn" title="Toggle theme">🌙</button>
+      </div>
+    </nav>
+
+    <!-- HERO — only eyebrow + title + subtitle visible initially -->
+    <div class="hero">
+      <div class="hero-eyebrow">Zero dependency · Shadow DOM · Web Component</div>
+      <h1 class="hero-title"><span>Cod</span>UI</h1>
+      <div class="hero-subtitle">Syntax highlighting,<br />done right.</div>
+
+      <!-- hidden until scroll -->
+      <div class="hero-reveal" id="hero-desc-block">
+        <p class="hero-desc">
+          A lightweight native Web Component for beautiful code highlighting.
+          Drop one tag anywhere. No bundler, no build step, no dependencies.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </p>
+      </div>
+      <div class="hero-reveal" id="hero-cta-block">
+        <div class="hero-cta">
+          <a href="#start" class="btn-p">Get Started →</a>
+          <a href="#usage" class="btn-s">View Docs</a>
+        </div>
+      </div>
+      <div class="hero-reveal" id="hero-install-block">
+        <div class="install-box">
+          <code>npm install cod-ui</code>
+          <button class="copy-btn"
+            onclick="navigator.clipboard.writeText('npm install cod-ui');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">
+            Copy
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FEATURES -->
+    <section id="features">
+      <div class="section-tag">What's inside</div>
+      <h2 class="section-title">Everything you need.<br />Nothing you don't.</h2>
+      <p class="section-body">Built from the ground up for modern web development. CodUI provides professional-grade
+        syntax highlighting without the bloat, designed to scale with your project.</p>
+      <div class="cards-grid">
+        <div class="card" data-delay="0">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div class="card-title">Zero Dependencies</div>
+          <div class="card-desc">Pure native Web Component using Shadow DOM. No React, no Vue, no build tools. Drop the
+            script tag and you're done. Completely isolated styling prevents CSS bleed.</div>
+        </div>
+        <div class="card" data-delay="80">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div class="card-title">Multi-Theme Support</div>
+          <div class="card-desc">Built-in dark, light, dracula, and glass themes. Switch with a single attribute.
+            Decoupled CSS-driven theme engine makes adding custom themes trivial.</div>
+        </div>
+        <div class="card" data-delay="160">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+          </div>
+          <div class="card-title">Line Numbers</div>
+          <div class="card-desc">Optional toggleable line number column. Styled, aligned, non-selectable by default.
+            Automatically counts lines and adjusts layout to fit perfectly.</div>
+        </div>
+        <div class="card" data-delay="240">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          </div>
+          <div class="card-title">Copy Button</div>
+          <div class="card-desc">Interactive one-click copy with visual confirmation. Smart text selection ensures you
+            only copy the raw code, completely ignoring line numbers and UI elements.</div>
+        </div>
+        <div class="card" data-delay="320">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
+          <div class="card-title">Fully Responsive</div>
+          <div class="card-desc">Customizable width and max-height attributes. Beautiful custom scrollbars on overflow.
+            Works flawlessly in flexbox, grid, and standard document flows.</div>
+        </div>
+        <div class="card" data-delay="400">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c6bff" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
+          </div>
+          <div class="card-title">Multi-Language</div>
+          <div class="card-desc">JS, TS, Python, HTML, CSS, JSON and bash. Robust Regex engine prevents tokenizer
+            collisions. Graceful fallback rendering for unknown languages.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- USAGE -->
+    <section id="usage">
+      <div class="section-tag">Usage</div>
+      <h2 class="section-title">One tag.<br />That's the API.</h2>
+      <p class="section-body">Zero setup, zero bundler config. Import the script once and use <code
+          style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:14px">&lt;cod-ui&gt;</code> anywhere
+        in your app. The component handles its own lifecycle.</p>
+      <div class="card" data-delay="0" style="padding:0; margin-top:48px;">
+        <cod-ui lang="javascript" theme="glass" line-numbers="true">
+// CodUI — JavaScript
+const fetchUserData = async (userId) => {
+    try {
+        const response = await fetch(\`/api/users/\${userId}\`);
+        const data = await response.json();
+
+        if (!data || !data.id) {
+            throw new Error('Invalid user data');
+        }
+        return { success: true, user: data };
+    } catch (err) {
+        console.error('Fetch failed:', err.message);
+        return { success: false, error: err.message };
+    }
+};
+
+export default fetchUserData;
+        </cod-ui>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- THEMES -->
+    <section id="themes">
+      <div class="section-tag">Themes</div>
+      <h2 class="section-title">Four moods.<br />One attribute.</h2>
+      <p class="section-body">Switch between built-in themes with a single <code
+          style="font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:14px">theme=""</code> attribute. Our
+        decoupled rendering engine ensures zero hardcoded colors.</p>
+      <div class="themes-row">
+        <div class="theme-pill th-dark card" data-delay="0">
+          <div class="theme-name">dark</div>
+          <div class="theme-lines">
+            <div class="tl" style="background:#58a6ff;width:70%"></div>
+            <div class="tl" style="background:#7ee787;width:55%"></div>
+            <div class="tl" style="background:#ffa657;width:80%"></div>
+            <div class="tl" style="background:#58a6ff;width:40%"></div>
+            <div class="tl" style="background:#6e7681;width:62%"></div>
+          </div>
+        </div>
+        <div class="theme-pill th-light card" data-delay="100">
+          <div class="theme-name">light</div>
+          <div class="theme-lines">
+            <div class="tl" style="background:#6c5ce7;width:70%"></div>
+            <div class="tl" style="background:#00b894;width:55%"></div>
+            <div class="tl" style="background:#e17055;width:80%"></div>
+            <div class="tl" style="background:#6c5ce7;width:40%"></div>
+            <div class="tl" style="background:#b2bec3;width:62%"></div>
+          </div>
+        </div>
+        <div class="theme-pill th-dracula card" data-delay="200">
+          <div class="theme-name">dracula</div>
+          <div class="theme-lines">
+            <div class="tl" style="background:#bd93f9;width:70%"></div>
+            <div class="tl" style="background:#50fa7b;width:55%"></div>
+            <div class="tl" style="background:#ffb86c;width:80%"></div>
+            <div class="tl" style="background:#ff79c6;width:40%"></div>
+            <div class="tl" style="background:#6272a4;width:62%"></div>
+          </div>
+        </div>
+        <div class="theme-pill th-glass card" data-delay="300">
+          <div class="theme-name">glass</div>
+          <div class="theme-lines">
+            <div class="tl" style="background:rgba(124,107,255,0.75);width:70%"></div>
+            <div class="tl" style="background:rgba(56,189,248,0.75);width:55%"></div>
+            <div class="tl" style="background:rgba(74,222,128,0.75);width:80%"></div>
+            <div class="tl" style="background:rgba(124,107,255,0.5);width:40%"></div>
+            <div class="tl" style="background:rgba(255,255,255,0.18);width:62%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- GET STARTED -->
+    <section id="start">
+      <div class="section-tag">Get Started</div>
+      <h2 class="section-title">Up in 60 seconds.</h2>
+      <p class="section-body">From zero to beautiful syntax highlighting in under a minute. Three simple steps is all it
+        takes.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div>
+            <div class="step-title">Install via npm</div>
+            <div class="step-desc">Add CodUI to your project using your package manager of choice. The footprint is tiny
+              and it has exactly zero dependencies.</div>
+            <div class="icode">npm install cod-ui</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div>
+            <div class="step-title">Import the script</div>
+            <div class="step-desc">Import the component once in your application's entry file. The custom element
+              registers itself with the browser automatically.</div>
+            <div class="icode">import 'cod-ui';</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div>
+            <div class="step-title">Use the tag anywhere</div>
+            <div class="step-desc">Wrap your raw code blocks in the &lt;cod-ui&gt; tag. The component will parse,
+              highlight, and render it beautifully.</div>
+            <div class="icode">&lt;cod-ui lang="js" theme="dark"&gt;...&lt;/cod-ui&gt;</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="nav-logo">
+        <svg width="28" height="21" viewBox="0 0 68 52" fill="none">
+          <rect x="14" y="10" width="44" height="32" rx="13" stroke="#7c6bff" stroke-width="2.8" fill="none" />
+          <path d="M14 26L5 17" stroke="#7c6bff" stroke-width="2.8" stroke-linecap="round" />
+          <path d="M14 26L5 35" stroke="#7c6bff" stroke-width="2.8" stroke-linecap="round" />
+          <path d="M5 17C6 20 7 23 7 26C7 29 6 32 5 35" stroke="#7c6bff" stroke-width="2" stroke-linecap="round" />
+          <circle cx="50" cy="19" r="2.4" fill="#7c6bff" />
+        </svg>
+        <span class="nav-wm"><span>Cod</span>UI</span>
+      </div>
+      <span class="footer-copy">© 2025 CodUI · MIT License</span>
+      <div class="footer-links">
+        <a href="#">GitHub</a><a href="#">npm</a><a href="#">Changelog</a><a href="#">Issues</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════
+       CONSTANTS
+    ═══════════════════════════════════════════════ */
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const IS_MOBILE = W <= 768;
+
+    // Timing (ms)
+    const T_SWIM_IN = 1000;   // hero fish left → center
+    const T_WAIT = 1500;   // hero fish waits at center
+    const T_BLINK = 300;    // blink starts N ms after arriving
+    const T_SWARM_CROSS = 2200;   // how long for swarm front to cross screen
+    const T_HERO_EXIT = 800;    // hero fish exits screen after wait
+
+    /* ═══════════════════════════════════════════════
+       SWARM FISH BUILDER — filled vivid colors
+    ═══════════════════════════════════════════════ */
+    const SWARM_COLORS = [
+      ['#7c6bff', '#5b4fe0'],  // purple
+      ['#38bdf8', '#0ea5e9'],  // cyan
+      ['#4ade80', '#22c55e'],  // green
+      ['#f472b6', '#ec4899'],  // pink
+      ['#fbbf24', '#f59e0b'],  // amber
+      ['#818cf8', '#6366f1'],  // indigo
+      ['#34d399', '#10b981'],  // emerald
+      ['#fb923c', '#f97316'],  // orange
+    ];
+
+    function swarmFishSVG(w, h, fill, stroke, type) {
+      const f = fill;
+      const s = stroke;
+      const sw = 1.8;
+
+      if (type === 0) {
+        // geo body — our signature fish, filled
+        return `<svg width="${w}" height="${h}" viewBox="0 0 68 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="10" width="44" height="32" rx="13" fill="${f}" fill-opacity="0.82" stroke="${s}" stroke-width="1.8"/>
+      <path d="M14 26L4 15" stroke="${s}" stroke-width="${sw}" stroke-linecap="round"/>
+      <path d="M14 26L4 37" stroke="${s}" stroke-width="${sw}" stroke-linecap="round"/>
+      <path d="M4 15C5 19 6 22 6 26C6 30 5 33 4 37" stroke="${s}" stroke-width="1.3" stroke-linecap="round"/>
+      <circle cx="50" cy="19" r="3" fill="rgba(255,255,255,0.9)"/>
+      <path d="M27 10C28 17 29 21 29 26C29 31 28 35 27 42" stroke="${s}" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>`;
+      }
+      if (type === 1) {
+        // torpedo fish, filled
+        return `<svg width="${w}" height="${h * 0.7}" viewBox="0 0 80 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M74 18C64 8 44 5 22 10C12 13 8 16 8 18C8 20 12 23 22 26C44 31 64 28 74 18Z" fill="${f}" fill-opacity="0.80" stroke="${s}" stroke-width="1.6"/>
+      <path d="M8 18L0 11M8 18L0 25" stroke="${s}" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M0 11C1 14 2 16 2 18C2 20 1 22 0 25" stroke="${s}" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="62" cy="14" r="2.5" fill="rgba(255,255,255,0.9)"/>
+    </svg>`;
+      }
+      if (type === 2) {
+        // chubby round, filled
+        return `<svg width="${w}" height="${h}" viewBox="0 0 60 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="34" cy="27" rx="20" ry="17" fill="${f}" fill-opacity="0.80" stroke="${s}" stroke-width="1.7"/>
+      <path d="M14 27L4 17M14 27L4 37" stroke="${s}" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M4 17C5 21 6 24 6 27C6 30 5 33 4 37" stroke="${s}" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="46" cy="20" r="3" fill="rgba(255,255,255,0.9)"/>
+      <path d="M22 23C26 21 32 21 36 23" stroke="${s}" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`;
+      }
+      if (type === 3) {
+        // slim dart, filled
+        return `<svg width="${w}" height="${h * 0.6}" viewBox="0 0 88 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M82 14C70 6 46 4 20 8C10 10 6 12 6 14C6 16 10 18 20 20C46 24 70 22 82 14Z" fill="${f}" fill-opacity="0.82" stroke="${s}" stroke-width="1.5"/>
+      <path d="M6 14L0 8M6 14L0 20" stroke="${s}" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="70" cy="10" r="2.2" fill="rgba(255,255,255,0.9)"/>
+    </svg>`;
+      }
+      // type 4: angelfish-ish, tall
+      return `<svg width="${w * 0.65}" height="${h * 1.25}" viewBox="0 0 42 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M36 32C32 18 22 10 14 12C8 14 6 20 6 28C6 36 8 42 14 44C22 46 32 40 36 32Z" fill="${f}" fill-opacity="0.78" stroke="${s}" stroke-width="1.7"/>
+    <path d="M6 28L0 20M6 28L0 36" stroke="${s}" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M16 12C14 6 12 2 14 0C16 2 18 6 18 12" stroke="${s}" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M16 44C14 50 12 54 14 56C16 54 18 50 18 44" stroke="${s}" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="28" cy="22" r="2.5" fill="rgba(255,255,255,0.9)"/>
+  </svg>`;
+    }
+
+    /* ═══════════════════════════════════════════════
+       LOADER ELEMENTS
+    ═══════════════════════════════════════════════ */
+    const loader = document.getElementById('loader');
+    const heroWrap = document.getElementById('hero-fish-wrap');
+    const heroEye = document.getElementById('hero-eye');
+    const swarmLayer = document.getElementById('swarm-layer');
+    const blurWipe = document.getElementById('blur-wipe');
+
+    // Place hero fish off-screen left, vertically centered
+    const FISH_W = IS_MOBILE ? 78 : 110;
+    const FISH_H = IS_MOBILE ? 60 : 84;
+    const HERO_Y = (H / 2) - (FISH_H / 2);
+    const CENTER_X = (W / 2) - (FISH_W / 2);
+
+    heroWrap.style.top = HERO_Y + 'px';
+    heroWrap.style.left = (-FISH_W - 20) + 'px';
+    heroWrap.style.width = FISH_W + 'px';
+    heroWrap.style.height = FISH_H + 'px';
+    document.getElementById('hero-svg').setAttribute('width', FISH_W);
+    document.getElementById('hero-svg').setAttribute('height', FISH_H);
+
+    // Easing
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    /* ═══════════════════════════════════════════════
+       BLINK
+    ═══════════════════════════════════════════════ */
+    function blinkEye() {
+      const eye = document.getElementById('hero-eye');
+      if (!eye) return;
+      // close
+      eye.setAttribute('ry', '0.2');
+      setTimeout(() => eye.setAttribute('ry', '2.8'), 150);
+      setTimeout(() => { eye.setAttribute('ry', '0.2'); }, 350);
+      setTimeout(() => eye.setAttribute('ry', '2.8'), 500);
+    }
+
+    /* ═══════════════════════════════════════════════
+       SPAWN SWARM
+       Fish fill screen height densely, staggered
+       entry so the "front" forms a wave
+    ═══════════════════════════════════════════════ */
+    const swarmFishEls = [];
+    let swarmStartTime = null;
+
+    function spawnSwarm() {
+      const ROWS = IS_MOBILE ? 18 : 28;   // rows across full height
+      const PER_ROW = IS_MOBILE ? 6 : 9;    // fish per row (some overlap)
+      const COUNT = ROWS * PER_ROW;
+
+      for (let i = 0; i < COUNT; i++) {
+        const row = i % ROWS;
+        const col = Math.floor(i / ROWS);
+        const type = (row + col) % 5;
+        const colPair = SWARM_COLORS[i % SWARM_COLORS.length];
+        const fill = colPair[0];
+        const stroke = colPair[1];
+
+        // Size: varied
+        const w = 32 + Math.random() * 44;
+        const h = w * 0.76;
+
+        // Y: evenly distributed across screen height + small jitter
+        const rowH = H / ROWS;
+        const y = row * rowH + (Math.random() - 0.5) * rowH * 0.6 - h / 2;
+
+        // Speed jitter: ±20% around base
+        const speedMult = 0.82 + Math.random() * 0.36;
+
+        // Column offset: determines how far behind "front" this fish is
+        // Front fish (col=0) are at the leading edge
+        // Back fish (col=PER_ROW-1) start a bit later
+        const colDelay = col * 110; // ms between columns
+
+        // Vertical wobble amplitude
+        const wobAmp = (Math.random() - 0.5) * 18;
+        const wobFreq = 0.002 + Math.random() * 0.003;
+
+        const svg = swarmFishSVG(w, h, fill, stroke, type);
+
+        const el = document.createElement('div');
+        el.style.cssText = `
+      position:absolute;
+      top:${y}px;
+      left:${-(w + 20)}px;
+      pointer-events:none;
+      will-change:transform;
+    `;
+        el.innerHTML = svg;
+        swarmLayer.appendChild(el);
+
+        swarmFishEls.push({
+          el, w, y, wobAmp, wobFreq,
+          speedMult, colDelay,
+          startX: -(w + 20),
+        });
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       MAIN ANIMATION LOOP
+    ═══════════════════════════════════════════════ */
+    let phase = 'swim-in';
+    let phaseStart = null;
+
+    function tick(ts) {
+      if (!phaseStart) phaseStart = ts;
+      const elapsed = ts - phaseStart;
+
+      // ─── Swarm + blur wipe run on their OWN clock, independent
+      //     of hero phase, starting the instant they spawn ───
+      if (swarmStartTime !== null) {
+        const swarmElapsed = ts - swarmStartTime;
+        animateSwarm(swarmElapsed);
+        const swarmFrontT = Math.min(swarmElapsed / T_SWARM_CROSS, 1);
+        const clipLeft = swarmFrontT * 102;
+        blurWipe.style.clipPath = `inset(0 0 0 ${clipLeft}%)`;
+
+        if (swarmFrontT >= 1 && phase === 'exit-done') {
+          finishLoader();
+          return;
+        }
+      }
+
+      // ─── Phase 1: hero fish swims to center ───
+      if (phase === 'swim-in') {
+        const t = Math.min(elapsed / T_SWIM_IN, 1);
+        const x = easeInOutCubic(t) * CENTER_X;
+        heroWrap.style.left = (x - FISH_W * 0.1) + 'px';
+
+        // slight vertical sine for swimming feel
+        const sinY = Math.sin(t * Math.PI * 3) * 6;
+        heroWrap.style.top = (HERO_Y + sinY) + 'px';
+
+        if (t >= 1) {
+          phase = 'wait';
+          phaseStart = ts;
+          // trigger blink
+          setTimeout(blinkEye, T_BLINK);
+          // spawn swarm at left edge NOW (during wait) — but they stay
+          // static until the hero actually starts swimming away
+          setTimeout(() => {
+            spawnSwarm();
+          }, 200);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // ─── Phase 2: hero fish waits 1.5s at center ───
+      else if (phase === 'wait') {
+        const bob = Math.sin(elapsed * 0.004) * 4;
+        heroWrap.style.top = (HERO_Y + bob) + 'px';
+
+        if (elapsed >= T_WAIT) {
+          phase = 'exit';
+          phaseStart = ts;
+          // hero starts swimming center→right NOW, and the swarm
+          // starts following from the left edge at the same instant
+          swarmStartTime = performance.now();
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // ─── Phase 3: hero fish leads off-screen right (swarm already swimming) ───
+      else if (phase === 'exit') {
+        const t = Math.min(elapsed / T_HERO_EXIT, 1);
+        const x = CENTER_X + easeInOutCubic(t) * (W + FISH_W * 2);
+        heroWrap.style.left = x + 'px';
+        const bob = Math.sin(elapsed * 0.006) * 5;
+        heroWrap.style.top = (HERO_Y + bob) + 'px';
+
+        if (t >= 1) {
+          phase = 'exit-done';
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // ─── Phase 4: hero gone, waiting for swarm to finish crossing ───
+      else if (phase === 'exit-done') {
+        requestAnimationFrame(tick);
+      }
+    }
+
+    function animateSwarm(elapsed) {
+      swarmFishEls.forEach(fish => {
+        const fishElapsed = elapsed - fish.colDelay;
+        if (fishElapsed < 0) return; // this fish hasn't left the start line yet
+
+        const fishT = Math.min(fishElapsed / (T_SWARM_CROSS * fish.speedMult), 1);
+        const x = easeOutCubic(fishT) * (W + fish.w * 3);
+        const wobY = Math.sin(elapsed * fish.wobFreq + fish.startX) * fish.wobAmp;
+
+        fish.el.style.transform = `translateX(${x}px) translateY(${wobY}px)`;
+      });
+    }
+
+    function finishLoader() {
+      loader.classList.add('done');
+      blurWipe.style.transition = 'opacity 0.4s ease';
+      blurWipe.style.opacity = '0';
+      document.body.classList.remove('loading');
+      // init card scroll observer
+      initCardObserver();
+      // init hero reveal on scroll
+      initHeroReveal();
+    }
+
+    // kick off
+    requestAnimationFrame(tick);
+
+    /* ═══════════════════════════════════════════════
+       HERO REVEAL ON SCROLL
+       desc, cta, install appear as user scrolls
+    ═══════════════════════════════════════════════ */
+    function initHeroReveal() {
+      const blocks = [
+        document.getElementById('hero-desc-block'),
+        document.getElementById('hero-cta-block'),
+        document.getElementById('hero-install-block'),
+      ];
+
+      let revealed = 0;
+      function revealNext() {
+        if (revealed < blocks.length) {
+          blocks[revealed].classList.add('show');
+          revealed++;
+        }
+      }
+
+      // reveal on first scroll, then on subsequent small scrolls
+      let lastScrollY = window.scrollY;
+      function onScroll() {
+        const dy = window.scrollY - lastScrollY;
+        if (dy > 0 && revealed < blocks.length) {
+          revealNext();
+          lastScrollY = window.scrollY;
+        }
+        if (revealed >= blocks.length) {
+          window.removeEventListener('scroll', onScroll);
+        }
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      // also reveal all if user hasn't scrolled after 4s (accessibility)
+      setTimeout(() => {
+        blocks.forEach(b => b.classList.add('show'));
+      }, 4000);
+    }
+
+    /* ═══════════════════════════════════════════════
+       CARD RIPPLE ENTRY
+    ═══════════════════════════════════════════════ */
+    function spawnRipple(card) {
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple-ring';
+      const size = 44;
+      ripple.style.cssText = `
+    width:${size}px;height:${size}px;
+    left:${-size / 2}px;
+    top:${card.offsetHeight / 2 - size / 2}px;
+  `;
+      card.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 1000);
+    }
+
+    function initCardObserver() {
+      const cards = document.querySelectorAll('.card');
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const card = e.target;
+            const delay = parseInt(card.dataset.delay || 0);
+            setTimeout(() => {
+              card.classList.add('visible');
+              spawnRipple(card);
+            }, delay);
+            obs.unobserve(card);
+          }
+        });
+      }, { threshold: 0.12 });
+      cards.forEach(c => obs.observe(c));
+    }
+
+    /* ═══════════════════════════════════════════════
+       AQUARIUM CANVAS
+    ═══════════════════════════════════════════════ */
+    const canvas = document.getElementById('aqua-canvas');
+    const ctx = canvas.getContext('2d');
+    let AW, AH;
+
+    function resizeCanvas() {
+      AW = canvas.width = window.innerWidth;
+      AH = canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+
+    // Ambient aquarium fish (outline only, very subtle)
+    const AMBIENT_COLORS = [
+      'rgba(124,107,255,', 'rgba(56,189,248,',
+      'rgba(74,222,128,', 'rgba(167,139,250,',
+      'rgba(96,165,250,', 'rgba(244,114,182,',
+    ];
+
+    const ambientFish = Array.from({ length: IS_MOBILE ? 10 : 20 }, (_, i) => ({
+      x: Math.random() * AW * 1.4 - AW * 0.2,
+      y: Math.random() * (AH || 800),
+      w: 40 + Math.random() * 60,
+      type: i % 5,
+      speed: 0.25 + Math.random() * 0.55,
+      col: AMBIENT_COLORS[i % AMBIENT_COLORS.length],
+      op: 0.05 + Math.random() * 0.08,
+      wob: Math.random() * Math.PI * 2,
+      wobSpd: 0.35 + Math.random() * 0.55,
+      wobAmp: 5 + Math.random() * 12,
+      depth: 0.4 + Math.random() * 0.6,
+    }));
+
+    // bubbles
+    const bubbles = Array.from({ length: IS_MOBILE ? 14 : 25 }, () => ({
+      x: Math.random() * 1400,
+      y: Math.random() * 900,
+      r: 1.5 + Math.random() * 4,
+      spd: 0.15 + Math.random() * 0.4,
+      drift: (Math.random() - 0.5) * 0.3,
+      op: 0.04 + Math.random() * 0.09,
+    }));
+
+    function drawAmbientFish(f, t) {
+      const { x, y, w, type, col, op } = f;
+      const h2 = w * 0.76;
+      const yw = y + Math.sin(t * f.wobSpd + f.wob) * f.wobAmp;
+
+      ctx.save();
+      ctx.translate(x, yw);
+      ctx.globalAlpha = op;
+      const c = col;
+
+      if (type === 0) {
+        // geo outline
+        ctx.beginPath();
+        ctx.roundRect(w * 0.2, h2 * 0.1, w * 0.65, h2 * 0.8, w * 0.19);
+        ctx.strokeStyle = c + '0.9)';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.moveTo(w * 0.2, h2 * 0.5); ctx.lineTo(0, h2 * 0.18);
+        ctx.moveTo(w * 0.2, h2 * 0.5); ctx.lineTo(0, h2 * 0.82);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(w * 0.73, h2 * 0.34, w * 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = c + '1)'; ctx.fill();
+      } else if (type === 1) {
+        // torpedo outline
+        ctx.beginPath();
+        ctx.moveTo(w * 0.92, h2 * 0.5);
+        ctx.bezierCurveTo(w * 0.7, h2 * 0.08, w * 0.18, h2 * 0.05, w * 0.14, h2 * 0.5);
+        ctx.bezierCurveTo(w * 0.18, h2 * 0.95, w * 0.7, h2 * 0.92, w * 0.92, h2 * 0.5);
+        ctx.strokeStyle = c + '0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(w * 0.14, h2 * 0.5); ctx.lineTo(0, h2 * 0.22);
+        ctx.moveTo(w * 0.14, h2 * 0.5); ctx.lineTo(0, h2 * 0.78);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(w * 0.76, h2 * 0.34, w * 0.045, 0, Math.PI * 2);
+        ctx.fillStyle = c + '1)'; ctx.fill();
+      } else if (type === 2) {
+        ctx.beginPath();
+        ctx.ellipse(w * 0.56, h2 * 0.5, w * 0.34, h2 * 0.44, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = c + '0.75)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(w * 0.22, h2 * 0.5); ctx.lineTo(0, h2 * 0.22);
+        ctx.moveTo(w * 0.22, h2 * 0.5); ctx.lineTo(0, h2 * 0.78);
+        ctx.strokeStyle = c + '0.75)'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(w * 0.76, h2 * 0.36, w * 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = c + '1)'; ctx.fill();
+      } else if (type === 3) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.9, h2 * 0.5);
+        ctx.bezierCurveTo(w * 0.72, h2 * 0.14, w * 0.28, h2 * 0.14, w * 0.16, h2 * 0.5);
+        ctx.bezierCurveTo(w * 0.28, h2 * 0.86, w * 0.72, h2 * 0.86, w * 0.9, h2 * 0.5);
+        ctx.strokeStyle = c + '0.7)'; ctx.lineWidth = 1.4; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(w * 0.16, h2 * 0.5); ctx.lineTo(0, h2 * 0.26);
+        ctx.moveTo(w * 0.16, h2 * 0.5); ctx.lineTo(0, h2 * 0.74);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(w * 0.76, h2 * 0.37, w * 0.042, 0, Math.PI * 2);
+        ctx.fillStyle = c + '1)'; ctx.fill();
+      } else {
+        // minimal line
+        ctx.beginPath();
+        ctx.moveTo(w * 0.88, h2 * 0.5);
+        ctx.quadraticCurveTo(w * 0.5, h2 * 0.07, w * 0.13, h2 * 0.5);
+        ctx.quadraticCurveTo(w * 0.5, h2 * 0.93, w * 0.88, h2 * 0.5);
+        ctx.strokeStyle = c + '0.65)'; ctx.lineWidth = 1.3; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(w * 0.13, h2 * 0.5); ctx.lineTo(0, h2 * 0.3);
+        ctx.moveTo(w * 0.13, h2 * 0.5); ctx.lineTo(0, h2 * 0.7);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(w * 0.74, h2 * 0.38, w * 0.04, 0, Math.PI * 2);
+        ctx.fillStyle = c + '0.9)'; ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    let aqT = 0;
+    function drawAquarium() {
+      ctx.clearRect(0, 0, AW, AH);
+
+      const dark = isDark();
+
+      // bg gradient
+      const g = ctx.createLinearGradient(0, 0, 0, AH);
+      if (dark) {
+        g.addColorStop(0, '#07070f');
+        g.addColorStop(0.55, '#09091a');
+        g.addColorStop(1, '#050510');
+      } else {
+        g.addColorStop(0, '#dde5ff');
+        g.addColorStop(0.5, '#eef2ff');
+        g.addColorStop(1, '#e5ebff');
+      }
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, AW, AH);
+
+      // caustic light rays
+      ctx.save();
+      ctx.globalAlpha = dark ? 0.022 : 0.035;
+      const rc = dark ? '124,107,255' : '108,92,231';
+      for (let r = 0; r < 7; r++) {
+        const rx = AW * 0.05 + r * AW * 0.145 + Math.sin(aqT * 0.28 + r * 1.2) * 28;
+        const rg = ctx.createLinearGradient(rx, 0, rx + 50, AH);
+        rg.addColorStop(0, `rgba(${rc},0.35)`);
+        rg.addColorStop(0.5, `rgba(${rc},0.08)`);
+        rg.addColorStop(1, `rgba(${rc},0)`);
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.moveTo(rx + Math.sin(aqT * 0.18 + r) * 18, 0);
+        ctx.lineTo(rx + 70 + Math.sin(aqT * 0.22 + r) * 22, 0);
+        ctx.lineTo(rx + 160 + Math.sin(aqT * 0.14 + r) * 38, AH);
+        ctx.lineTo(rx - 70 + Math.sin(aqT * 0.16 + r) * 32, AH);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // bubbles
+      bubbles.forEach(b => {
+        b.y -= b.spd; b.x += b.drift;
+        if (b.y < -8) { b.y = AH + 8; b.x = Math.random() * AW; }
+        ctx.save();
+        ctx.globalAlpha = b.op;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.strokeStyle = dark ? 'rgba(124,107,255,0.7)' : 'rgba(108,92,231,0.5)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // ambient fish
+      ambientFish.forEach(f => {
+        f.x += f.speed * f.depth;
+        if (f.x > AW + f.w * 1.5) f.x = -f.w * 2;
+        drawAmbientFish(f, aqT);
+      });
+
+      aqT += 0.016;
+      requestAnimationFrame(drawAquarium);
+    }
+    drawAquarium();
+
+    /* ═══════════════════════════════════════════════
+       THEME TOGGLE
+    ═══════════════════════════════════════════════ */
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+  </script>
+</body>
+
+</html>
