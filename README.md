@@ -27,6 +27,42 @@ console.log(greeting);
 </cod-ui>
 ```
 
+### 📝 Displaying HTML & Special Code Blocks
+
+Due to how browser HTML parsers work, placing raw HTML tags inside the `<cod-ui>` element will cause the browser to parse them as active elements instead of code text. You have three ways to display HTML code blocks:
+
+#### Option 1: Escaped Entities (Standard)
+Escape the brackets (`<` to `&lt;` and `>` to `&gt;`) inside the component tag:
+```html
+<cod-ui lang="html">
+&lt;div class="container"&gt;
+    &lt;h1&gt;Hello World&lt;/h1&gt;
+&lt;/div&gt;
+</cod-ui>
+```
+
+#### Option 2: Script Wrapper (Unescaped)
+Wrap your code snippet in a `<script type="text/plain">` tag. The browser will ignore parsing the inner HTML, and `<cod-ui>` will automatically extract and highlight the raw code:
+```html
+<cod-ui lang="html">
+    <script type="text/plain">
+<div class="container">
+    <h1>Hello World</h1>
+</div>
+    </script>
+</cod-ui>
+```
+
+#### Option 3: Programmatic API
+Create the element dynamically in JavaScript and set `textContent`. This bypasses browser HTML parsing completely and requires no escaping:
+```javascript
+const codeBlock = document.createElement('cod-ui');
+codeBlock.setAttribute('lang', 'html');
+codeBlock.textContent = '<div class="container"><h1>Hello World</h1></div>';
+document.body.appendChild(codeBlock);
+```
+
+
 ### Attributes
 
 | Attribute | Type | Default | Description |

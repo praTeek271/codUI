@@ -57,10 +57,7 @@ class CodUI extends HTMLElement {
         var showLines = this.getAttribute('line-numbers') === 'true';
 
         // 1. Get raw content from component body
-        var rawCode = this.innerHTML;
-        if (!rawCode || !rawCode.trim()) {
-            rawCode = this.textContent || '';
-        }
+        var rawCode = this.textContent || '';
         
         // Clean leading/trailing empty lines
         rawCode = stripNewlines(rawCode);
