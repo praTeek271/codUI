@@ -9,7 +9,9 @@ let registeredClass = null;
 
 global.HTMLElement = class {
     constructor() {
-        this.shadowRoot = {};
+        this.shadowRoot = {
+            getElementById: () => null
+        };
     }
     attachShadow() {
         return this.shadowRoot;
@@ -103,6 +105,33 @@ const bashInput = `echo $USER`;
 const resBash = componentInstance.highlight(bashInput, 'bash');
 assert("Highlight Bash keywords", resBash.includes('<span class="keyword">echo</span>'), true);
 assert("Highlight Bash variables", resBash.includes('<span class="number">$USER</span>'), true);
+
+// Test Group 7: Component DOM Rendering (Integration)
+console.log("\n🔹 Testing Component DOM Rendering & Double Escaping...");
+const renderElement = (code, lang) => {
+    const el = new registeredClass();
+    el.setAttribute('lang', lang);
+    el.textContent = code;
+    el.connectedCallback(); // Trigger render pipeline
+    return el.shadowRoot.innerHTML;
+};
+
+// JS Arrow Function Check
+const jsRendered = renderElement("const f = (x) => x;", "js");
+assert("JS arrow function output has correct =&gt;", jsRendered.includes('=&gt;'), true);
+assert("JS arrow function output is not double-escaped", jsRendered.includes('=&amp;gt;'), false);
+
+// HTML Tag Double Escaping Check
+const htmlRendered = renderElement('<div class="box"></div>', "html");
+assert("HTML output highlights tag names", htmlRendered.includes('<span class="tag">div</span>'), true);
+assert("HTML output is not double-escaped", htmlRendered.includes('&amp;lt;'), false);
+
+// Python String Swallowing & Sentinel Leak Check
+const pyStringInput = `if '=' in line:\n    key = 'val' # comment`;
+const pyRendered = renderElement(pyStringInput, "python");
+assert("Python string quotes do not leak sentinels (no «T or T»)", /«T|T»|\\x00/g.test(pyRendered), false);
+assert("Python string code on same line is not swallowed", pyRendered.includes('line'), true);
+assert("Python comments still highlight after string matching", pyRendered.includes('<span class="comment"># comment</span>'), true);
 
 console.log(`\n📊 Run Details: ${testCount} tests, ${failureCount} failures.`);
 

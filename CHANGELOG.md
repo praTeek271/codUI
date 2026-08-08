@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.9] — 2026-08-08
+
+### Fixed
+- **Double Escaping Bug** — Swapped `this.innerHTML` for `this.textContent` in core element rendering. This prevents the browser parser from pre-serializing and double-escaping characters like `<`, `>`, and `&`, resolving arrow function rendering (`=>`) in JavaScript and tag issues in HTML.
+- **Python String Truncation & Token Leakage** — Swapped the fragile `\x00TnT\x00` (null-byte) protect tokens for DOM-safe Unicode markers `«TnT»` in all tokenizers, resolving issues where single quotes like `'='` truncated lines and leaked internal sentinel placeholders.
+
+### Added
+- **DOM Integration Tests** — Expanded test suite to check DOM-based custom element rendering, arrow function safety, HTML tagging, and Python sentinel integrity.
+- **Improved HTML Block Documentation** — Updated `README.md` to detail how to highlight HTML blocks using standard escaping, `<script type="text/plain">` templates, or the programmatic `textContent` API.
+
+---
+
 ## [2.0.8] — 2026-06-30
 
 ### Added

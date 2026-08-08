@@ -21,7 +21,7 @@ registerLanguage('json', {
         var store = [];
 
         function protect(html) {
-            var id = '\x00T' + store.length + 'T\x00';
+            var id = '«T' + store.length + 'T»';
             store.push(html);
             return id;
         }
@@ -47,7 +47,7 @@ registerLanguage('json', {
         });
 
         // 5. Restore
-        return code.replace(/\x00T(\d+)T\x00/g, function (_, i) {
+        return code.replace(/«T(\d+)T»/g, function (_, i) {
             return store[+i];
         });
     }
