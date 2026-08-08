@@ -133,6 +133,12 @@ assert("Python string quotes do not leak sentinels (no «T or T»)", /«T|T»|\\
 assert("Python string code on same line is not swallowed", pyRendered.includes('line'), true);
 assert("Python comments still highlight after string matching", pyRendered.includes('<span class="comment"># comment</span>'), true);
 
+// Python hash-inside-string test (the '#' in '#' must NOT become a comment)
+const pyHashStringInput = `if '#' in line and not line.startswith('#'):`;
+const pyHashRendered = renderElement(pyHashStringInput, "python");
+assert("Python: '#' inside string does not get treated as a comment", pyHashRendered.includes('<span class="comment">\'#\'</span>'), false);
+assert("Python: '#' inside string renders as a string span", pyHashRendered.includes('<span class="string">\'#\'</span>'), true);
+
 console.log(`\n📊 Run Details: ${testCount} tests, ${failureCount} failures.`);
 
 if (failureCount > 0) {

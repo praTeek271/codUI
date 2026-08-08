@@ -36,16 +36,12 @@ registerLanguage('python', {
             return protect('<span class="string">' + m + '</span>');
         });
 
-        // 2. Hash comments
-        code = code.replace(PATTERNS.COMMENT_HASH(), function (m) {
-            return protect('<span class="comment">' + m + '</span>');
-        });
-
-        // 3. Single-line strings
-        code = code.replace(PATTERNS.STRING_DOUBLE(), function (m) {
-            return protect('<span class="string">' + m + '</span>');
-        });
-        code = code.replace(PATTERNS.STRING_SINGLE(), function (m) {
+        // 2+3. Strings AND hash comments — combined single pass.
+        // Strings are listed FIRST in the alternation so that '#' inside a
+        // string like '=' or "#" is consumed as part of the string token
+        // and NEVER treated as a comment start.
+        code = code.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|(#[^\n]*)/g, function (m, comment) {
+            if (comment !== undefined) return protect('<span class="comment">' + comment + '</span>');
             return protect('<span class="string">' + m + '</span>');
         });
 
