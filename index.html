@@ -1404,7 +1404,8 @@
         <article class="story-panel card" data-delay="0">
           <div class="story-kicker">Use cases</div>
           <h3 class="story-heading">Fits docs, launch pages, and design system previews.</h3>
-          <p class="story-lead">The component is tuned to feel native inside modern interfaces, so the code block becomes
+          <p class="story-lead">The component is tuned to feel native inside modern interfaces, so the code block
+            becomes
             part of the design instead of a visual interruption.</p>
           <div class="story-list">
             <div class="story-item">
@@ -1449,12 +1450,14 @@
             <div class="metric-card card" data-delay="160">
               <div class="metric-value">0</div>
               <div class="metric-label">framework lock-in</div>
-              <div class="metric-desc">Use it in plain HTML, docs sites, or any stack that can host a custom element.</div>
+              <div class="metric-desc">Use it in plain HTML, docs sites, or any stack that can host a custom element.
+              </div>
             </div>
             <div class="metric-card card" data-delay="200">
               <div class="metric-value">100%</div>
               <div class="metric-label">self-contained styling</div>
-              <div class="metric-desc">Shadow DOM keeps the component's visuals isolated from the rest of the page.</div>
+              <div class="metric-desc">Shadow DOM keeps the component's visuals isolated from the rest of the page.
+              </div>
             </div>
           </div>
 
@@ -1572,17 +1575,20 @@
           <button class="usage-tab active" type="button" role="tab" aria-selected="true" data-usage-tab="0">
             <span class="usage-tab-index">/01</span>
             <span class="usage-tab-title">JavaScript</span>
-            <span class="usage-tab-desc">A small async helper with fetch, validation, and a clean success/error shape.</span>
+            <span class="usage-tab-desc">A small async helper with fetch, validation, and a clean success/error
+              shape.</span>
           </button>
           <button class="usage-tab" type="button" role="tab" aria-selected="false" data-usage-tab="1">
             <span class="usage-tab-index">/02</span>
             <span class="usage-tab-title">Bash</span>
-            <span class="usage-tab-desc">A tiny release script that builds, checks the output, and prints a deploy note.</span>
+            <span class="usage-tab-desc">A tiny release script that builds, checks the output, and prints a deploy
+              note.</span>
           </button>
           <button class="usage-tab" type="button" role="tab" aria-selected="false" data-usage-tab="2">
             <span class="usage-tab-index">/03</span>
             <span class="usage-tab-title">Python</span>
-            <span class="usage-tab-desc">A compact formatter that groups task records by status for quick reporting.</span>
+            <span class="usage-tab-desc">A compact formatter that groups task records by status for quick
+              reporting.</span>
           </button>
         </div>
 
@@ -1595,7 +1601,7 @@ async function loadUser(userId) {
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
-  }
+    }
 
   const user = await response.json();
   return {
@@ -1620,8 +1626,8 @@ BUILD_DIR="dist"
 npm run build
 
 if [ ! -d "$BUILD_DIR" ]; then
-  echo "Missing build output: $BUILD_DIR"
-  exit 1
+echo "Missing build output: $BUILD_DIR"
+exit 1
 fi
 
 echo "$APP_NAME is ready to deploy."
@@ -1634,16 +1640,16 @@ echo "$APP_NAME is ready to deploy."
 from collections import defaultdict
 
 tasks = [
-    {"title": "Write docs", "status": "done"},
-    {"title": "Polish demo", "status": "active"},
-    {"title": "Ship release", "status": "queued"},
+  {"title": "Write docs", "status": "done"},
+  {"title": "Polish demo", "status": "active"},
+  {"title": "Ship release", "status": "queued"},
 ]
 
 def group_by_status(items):
-    grouped = defaultdict(list)
-    for item in items:
-        grouped[item["status"]].append(item["title"])
-    return dict(grouped)
+grouped = defaultdict(list)
+for item in items:
+grouped[item["status"]].append(item["title"])
+return dict(grouped)
 
 print(group_by_status(tasks))
             </cod-ui>
@@ -1774,8 +1780,8 @@ print(group_by_status(tasks))
     const T_SWIM_IN = 1000;   // hero fish left → center
     const T_WAIT = 1500;   // hero fish waits at center
     const T_BLINK = 300;    // blink starts N ms after arriving
-    const T_SWARM_CROSS = 2200;   // how long for swarm front to cross screen
-    const T_SWARM_CLEAR = T_SWARM_CROSS + 1000; // lets staggered fish drift fully off-screen
+    const T_SWARM_CROSS = 2400;   // how long for swarm front to cross screen
+    const T_SWARM_CLEAR = 3800;   // lets the whole tray drift fully off-screen
     const T_HERO_EXIT = 800;    // hero fish exits screen after wait
 
     /* ═══════════════════════════════════════════════
@@ -1884,69 +1890,86 @@ print(group_by_status(tasks))
       // close
       eye.setAttribute('ry', '0.2');
       setTimeout(() => eye.setAttribute('ry', '2.8'), 150);
-      setTimeout(() => { eye.setAttribute('ry', '0.2'); }, 350);
+      setTimeout(() => {eye.setAttribute('ry', '0.2');}, 350);
       setTimeout(() => eye.setAttribute('ry', '2.8'), 500);
     }
 
     /* ═══════════════════════════════════════════════
        SPAWN SWARM
-       Fish fill screen height densely, staggered
-       entry so the "front" forms a wave
+       Desktop uses one moving tray so fish never collapse at the edge.
     ═══════════════════════════════════════════════ */
     const swarmFishEls = [];
+    let swarmTray = null;
+    let swarmTrayWidth = 0;
     let swarmStartTime = null;
 
     function spawnSwarm() {
-      const ROWS = IS_MOBILE ? 18 : 28;   // rows across full height
-      const PER_ROW = IS_MOBILE ? 6 : 9;    // fish per row (some overlap)
-      const COUNT = ROWS * PER_ROW;
+      if (IS_MOBILE) return;
 
-      for (let i = 0; i < COUNT; i++) {
-        const row = i % ROWS;
-        const col = Math.floor(i / ROWS);
-        const type = (row + col) % 5;
-        const colPair = SWARM_COLORS[i % SWARM_COLORS.length];
-        const fill = colPair[0];
-        const stroke = colPair[1];
+      const ROWS = 24;
+      const COLS = 16;
+      swarmTrayWidth = Math.round(W * 1.55 + 420);
 
-        // Size: varied
-        const w = 32 + Math.random() * 44;
-        const h = w * 0.76;
-
-        // Y: evenly distributed across screen height + small jitter
-        const rowH = H / ROWS;
-        const y = row * rowH + (Math.random() - 0.5) * rowH * 0.6 - h / 2;
-
-        // Speed jitter: ±20% around base
-        const speedMult = 0.82 + Math.random() * 0.36;
-
-        // Column offset: determines how far behind "front" this fish is
-        // Front fish (col=0) are at the leading edge
-        // Back fish (col=PER_ROW-1) start a bit later
-        const colDelay = col * 110; // ms between columns
-
-        // Vertical wobble amplitude
-        const wobAmp = (Math.random() - 0.5) * 18;
-        const wobFreq = 0.002 + Math.random() * 0.003;
-
-        const svg = swarmFishSVG(w, h, fill, stroke, type);
-
-        const el = document.createElement('div');
-        el.style.cssText = `
+      swarmTray = document.createElement('div');
+      swarmTray.style.cssText = `
       position:absolute;
-      top:${y}px;
-      left:${-(w + 20)}px;
+      top:0;
+      left:0;
+      width:${swarmTrayWidth}px;
+      height:${H}px;
+      transform:translateX(${-swarmTrayWidth - 120}px);
       pointer-events:none;
       will-change:transform;
     `;
-        el.innerHTML = svg;
-        swarmLayer.appendChild(el);
+      swarmLayer.appendChild(swarmTray);
 
-        swarmFishEls.push({
-          el, w, y, wobAmp, wobFreq,
-          speedMult, colDelay,
-          startX: -(w + 20),
-        });
+      const colGap = swarmTrayWidth / (COLS - 1);
+      const rowH = H / ROWS;
+      let fishIndex = 0;
+
+      for (let col = 0; col < COLS; col++) {
+        const colProgress = col / (COLS - 1);
+        const edgeFalloff = Math.sin(colProgress * Math.PI);
+        const keepChance = 0.22 + Math.pow(edgeFalloff, 0.72) * 0.68;
+
+        for (let row = 0; row < ROWS; row++) {
+          if (Math.random() > keepChance) continue;
+
+          const type = (row + col) % 5;
+          const colPair = SWARM_COLORS[fishIndex % SWARM_COLORS.length];
+          const fill = colPair[0];
+          const stroke = colPair[1];
+
+          // Size: varied
+          const w = 32 + Math.random() * 44;
+          const h = w * 0.76;
+
+          const x = col * colGap + (Math.random() - 0.5) * colGap * 0.42;
+          const y = row * rowH + rowH * 0.5 + (Math.random() - 0.5) * rowH * 0.72 - h / 2;
+
+          // Vertical wobble amplitude
+          const wobAmp = (Math.random() - 0.5) * 18;
+          const wobFreq = 0.002 + Math.random() * 0.003;
+
+          const svg = swarmFishSVG(w, h, fill, stroke, type);
+
+          const el = document.createElement('div');
+          el.style.cssText = `
+      position:absolute;
+      top:${y}px;
+      left:${x}px;
+      pointer-events:none;
+      will-change:transform;
+    `;
+          el.innerHTML = svg;
+          swarmTray.appendChild(el);
+
+          swarmFishEls.push({
+            el, wobAmp, wobFreq,
+            wobSeed: Math.random() * Math.PI * 2,
+          });
+          fishIndex++;
+        }
       }
     }
 
@@ -2009,7 +2032,9 @@ print(group_by_status(tasks))
           phaseStart = ts;
           // hero starts swimming center→right NOW, and the swarm
           // starts following from the left edge at the same instant
-          swarmStartTime = performance.now();
+          if (!IS_MOBILE) {
+            swarmStartTime = performance.now();
+          }
         }
         requestAnimationFrame(tick);
       }
@@ -2024,6 +2049,10 @@ print(group_by_status(tasks))
 
         if (t >= 1) {
           phase = 'exit-done';
+          if (IS_MOBILE) {
+            finishLoader();
+            return;
+          }
         }
         requestAnimationFrame(tick);
       }
@@ -2035,17 +2064,18 @@ print(group_by_status(tasks))
     }
 
     function animateSwarm(elapsed) {
+      if (!swarmTray) return;
+
+      const t = Math.min(elapsed / T_SWARM_CLEAR, 1);
+      const startX = -swarmTrayWidth - 120;
+      const endX = W + 180;
+      const trayX = startX + t * (endX - startX);
+      swarmTray.style.transform = `translateX(${trayX}px)`;
+
       swarmFishEls.forEach(fish => {
-        const fishElapsed = elapsed - fish.colDelay;
-        if (fishElapsed < 0) return; // this fish hasn't left the start line yet
+        const wobY = Math.sin(elapsed * fish.wobFreq + fish.wobSeed) * fish.wobAmp;
 
-        const rawT = fishElapsed / (T_SWARM_CROSS * fish.speedMult);
-        const fishT = Math.min(rawT, 1);
-        const clearDrift = Math.max(rawT - 1, 0) * (W * 0.45 + fish.w * 5);
-        const x = easeOutCubic(fishT) * (W + fish.w * 3) + clearDrift;
-        const wobY = Math.sin(elapsed * fish.wobFreq + fish.startX) * fish.wobAmp;
-
-        fish.el.style.transform = `translateX(${x}px) translateY(${wobY}px)`;
+        fish.el.style.transform = `translateY(${wobY}px)`;
       });
     }
 
@@ -2097,7 +2127,7 @@ print(group_by_status(tasks))
         }
       }
 
-      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('scroll', onScroll, {passive: true});
 
       // also reveal all if user hasn't scrolled after 4s (accessibility)
       setTimeout(() => {
@@ -2135,7 +2165,7 @@ print(group_by_status(tasks))
             obs.unobserve(card);
           }
         });
-      }, { threshold: 0.12 });
+      }, {threshold: 0.12});
       cards.forEach(c => obs.observe(c));
     }
 
@@ -2218,7 +2248,7 @@ print(group_by_status(tasks))
       'rgba(96,165,250,', 'rgba(244,114,182,',
     ];
 
-    const ambientFish = Array.from({ length: IS_MOBILE ? 10 : 20 }, (_, i) => ({
+    const ambientFish = Array.from({length: IS_MOBILE ? 10 : 20}, (_, i) => ({
       x: Math.random() * AW * 1.4 - AW * 0.2,
       y: Math.random() * (AH || 800),
       w: 40 + Math.random() * 60,
@@ -2233,7 +2263,7 @@ print(group_by_status(tasks))
     }));
 
     // bubbles
-    const bubbles = Array.from({ length: IS_MOBILE ? 14 : 25 }, () => ({
+    const bubbles = Array.from({length: IS_MOBILE ? 14 : 25}, () => ({
       x: Math.random() * 1400,
       y: Math.random() * 900,
       r: 1.5 + Math.random() * 4,
@@ -2243,7 +2273,7 @@ print(group_by_status(tasks))
     }));
 
     function drawAmbientFish(f, t) {
-      const { x, y, w, type, col, op } = f;
+      const {x, y, w, type, col, op} = f;
       const h2 = w * 0.76;
       const yw = y + Math.sin(t * f.wobSpd + f.wob) * f.wobAmp;
 
@@ -2361,7 +2391,7 @@ print(group_by_status(tasks))
       // bubbles
       bubbles.forEach(b => {
         b.y -= b.spd; b.x += b.drift;
-        if (b.y < -8) { b.y = AH + 8; b.x = Math.random() * AW; }
+        if (b.y < -8) {b.y = AH + 8; b.x = Math.random() * AW;}
         ctx.save();
         ctx.globalAlpha = b.op;
         ctx.beginPath();
