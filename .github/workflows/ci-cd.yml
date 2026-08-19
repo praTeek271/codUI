@@ -73,7 +73,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add codUI.js
-            git commit -m "build: auto-compile codUI.js [skip ci]"
+            git commit -m "build: auto-compile codUI.js [FROM: CI BUILD]"
             git push origin HEAD:main
           fi
 
