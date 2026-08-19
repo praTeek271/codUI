@@ -35,7 +35,49 @@ jobs:
       - name: Run Test Suite (Regression Checks)
         run: npm test
 
-  # Job 2: Automate GitHub Releases
+  # Job 2: Build and commit the distributable bundle on main
+  build-artifact:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Build codUI.js
+        run: npm run build
+
+      - name: Commit Compiled Artifact
+        run: |
+          if git diff --quiet -- codUI.js; then
+            echo "codUI.js is already up to date."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add codUI.js
+            git commit -m "build: auto-compile codUI.js [skip ci]"
+            git push origin HEAD:main
+          fi
+
+  # Job 3: Automate GitHub Releases
   release:
     needs: test
     runs-on: ubuntu-latest
@@ -45,6 +87,23 @@ jobs:
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Build codUI.js
+        run: npm run build
 
       - name: Extract Release Notes from Changelog
         id: extract_changelog
