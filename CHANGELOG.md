@@ -5,7 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.1.0] — 2026-08-28
+
+### Fixed
+- **Python: `'#'` inside a string treated as a comment** — Replaced the separate `COMMENT_HASH` + `STRING_SINGLE/DOUBLE` passes in `python.js` with a single combined alternation regex. Strings are listed first in the alternation so any `#` character inside a string literal (`'#'`, `"#"`, `'='`) is consumed as part of the string token and never incorrectly treated as a comment start.
+- **Bash: `"hello # world"` partially colored as a comment** — Same combined alternation regex fix applied to `bash.js`. Strings inside `echo` calls and assignments containing `#` are now correctly highlighted.
+
+### Improved
+- **Test suite** — Added dedicated regression tests for the hash-inside-string edge case in both Python and Bash to prevent regressions.
+
+---
+
+
 ## [2.0.9] — 2026-08-08
+
 
 ### Fixed
 - **Double Escaping Bug** — Swapped `this.innerHTML` for `this.textContent` in core element rendering. This prevents the browser parser from pre-serializing and double-escaping characters like `<`, `>`, and `&`, resolving arrow function rendering (`=>`) in JavaScript and tag issues in HTML.

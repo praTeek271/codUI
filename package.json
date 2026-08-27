@@ -1,6 +1,6 @@
 {
   "name": "cod-ui",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "A lightweight, zero-dependency Web Component for code highlighting.",
   "main": "codUI.js",
   "scripts": {
