@@ -13,25 +13,25 @@ Welcome to the **`dev`** branch of **CodUI**. This branch hosts the interactive 
 | Branch | Primary Purpose | Contents |
 | :--- | :--- | :--- |
 | **`main`** | **Core Source & Releases** | Modular source code (`src/`), build scripts (`scripts/`), CI/CD automation, regression test runner, npm package configuration. |
-| **`dev`** | **Showcase, Docs & Playground** | Live landing page (`index.html`), interactive **CodUI Studio Playground** (`playground/`), full **Documentation Portal** (`docs/`), and pre-built distribution testing (`codUI.js`). |
+| **`dev`** | **Showcase, Docs & Playground** | Live landing page ([`index.html`](https://prateek271.github.io/codUI/index.html)), interactive **CodUI Studio Playground** ([`playground/`](https://prateek271.github.io/codUI/playground/index.html)), full **Documentation Portal** ([`docs/`](https://prateek271.github.io/codUI/docs/index.html)), and pre-built distribution testing (`codUI.js`). |
 
 ---
 
 ## 🌐 Apps & Deployments in this Branch
 
-### 1. 🚀 Visual Showcase & Landing Page ([`index.html`](index.html))
+### 1. 🚀 Visual Showcase & Landing Page ([`https://prateek271.github.io/codUI/index.html`](https://prateek271.github.io/codUI/index.html))
 The official marketing and interactive demonstration page featuring:
 - Live hero animations and interactive canvas background.
 - Dynamic feature cards showcasing Shadow DOM isolation, zero dependencies, and instant copy buttons.
 - Direct navigation to the Playground Studio and Documentation site.
 
-### 2. ⚡ CodUI Studio Playground ([`playground/index.html`](playground/index.html))
+### 2. ⚡ CodUI Studio Playground ([`https://prateek271.github.io/codUI/playground/index.html`](https://prateek271.github.io/codUI/playground/index.html))
 A real-time interactive code editor and generator:
 - Live dual-pane layout: Type code on the left, see instant syntax-highlighted render on the right.
 - Real-time toolbar controls for language (`js`, `ts`, `python`, `html`, `css`, `json`, `bash`), theme (`dark`, `dracula`, `glass`, `light`), line-number gutter, width, and max-height.
 - One-click HTML snippet exporter for easy embedding into projects.
 
-### 3. 📖 Documentation Portal ([`docs/index.html`](docs/index.html))
+### 3. 📖 Documentation Portal ([`https://prateek271.github.io/codUI/docs/index.html`](https://prateek271.github.io/codUI/docs/index.html))
 Comprehensive developer documentation covering:
 - **Quickstart & CDN installation** (via jsDelivr).
 - **Component Attributes Reference** (`lang`, `theme`, `line-numbers`, `width`, `height`).
