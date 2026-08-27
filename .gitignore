@@ -19,5 +19,4 @@ Gemfile.lock
 
 # Custom ignores
 .agents/
-docs/
 Setting Up CodUI Development Environment.md
