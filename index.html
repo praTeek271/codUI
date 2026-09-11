@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CodUI — Web Component Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -1595,63 +1596,63 @@
         <div class="usage-code-stage" data-delay="120">
           <div class="usage-code-panel active" data-usage-panel="0">
             <cod-ui lang="javascript" theme="glass" line-numbers="true" height="auto">
-// JavaScript
-async function loadUser(userId) {
-  const response = await fetch(`/api/users/${userId}`);
+              // JavaScript
+              async function loadUser(userId) {
+              const response = await fetch(`/api/users/${userId}`);
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-    }
+              if (!response.ok) {
+              throw new Error(`Request failed: ${response.status}`);
+              }
 
-  const user = await response.json();
-  return {
-    id: user.id,
-    name: user.name ?? "Anonymous",
-    active: Boolean(user.active),
-  };
-}
+              const user = await response.json();
+              return {
+              id: user.id,
+              name: user.name ?? "Anonymous",
+              active: Boolean(user.active),
+              };
+              }
 
-loadUser("codui-271").then(console.log);
+              loadUser("codui-271").then(console.log);
             </cod-ui>
           </div>
 
           <div class="usage-code-panel" data-usage-panel="1">
             <cod-ui lang="bash" theme="glass" line-numbers="true" height="auto">
-# Bash
-set -euo pipefail
+              # Bash
+              set -euo pipefail
 
-APP_NAME="codui"
-BUILD_DIR="dist"
+              APP_NAME="codui"
+              BUILD_DIR="dist"
 
-npm run build
+              npm run build
 
-if [ ! -d "$BUILD_DIR" ]; then
-echo "Missing build output: $BUILD_DIR"
-exit 1
-fi
+              if [ ! -d "$BUILD_DIR" ]; then
+              echo "Missing build output: $BUILD_DIR"
+              exit 1
+              fi
 
-echo "$APP_NAME is ready to deploy."
+              echo "$APP_NAME is ready to deploy."
             </cod-ui>
           </div>
 
           <div class="usage-code-panel" data-usage-panel="2">
             <cod-ui lang="python" theme="glass" line-numbers="true" height="auto">
-# Python
-from collections import defaultdict
+              # Python
+              from collections import defaultdict
 
-tasks = [
-  {"title": "Write docs", "status": "done"},
-  {"title": "Polish demo", "status": "active"},
-  {"title": "Ship release", "status": "queued"},
-]
+              tasks = [
+              {"title": "Write docs", "status": "done"},
+              {"title": "Polish demo", "status": "active"},
+              {"title": "Ship release", "status": "queued"},
+              ]
 
-def group_by_status(items):
-grouped = defaultdict(list)
-for item in items:
-grouped[item["status"]].append(item["title"])
-return dict(grouped)
+              def group_by_status(items):
+              grouped = defaultdict(list)
+              for item in items:
+              grouped[item["status"]].append(item["title"])
+              return dict(grouped)
 
-print(group_by_status(tasks))
+              print(group_by_status(tasks))
             </cod-ui>
           </div>
         </div>

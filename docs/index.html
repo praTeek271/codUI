@@ -7,6 +7,7 @@
   <title>CodUI Documentation — Lightweight Web Component Syntax Highlighter</title>
   <meta name="description"
     content="Official documentation for CodUI — zero-dependency, themeable code syntax highlighter Web Component." />
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -97,7 +98,9 @@
     /* ════════════════════════════════════════════
        GLOBAL RESET & BASE STYLING
     ════════════════════════════════════════════ */
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -772,7 +775,8 @@
         <ul class="sidebar-menu">
           <li><a href="#attributes" class="sidebar-link">Component Attributes</a></li>
           <li><a href="#themes" class="sidebar-link">Theme System <span class="sidebar-pill">4 themes</span></a></li>
-          <li><a href="#languages" class="sidebar-link">Supported Languages <span class="sidebar-pill">6 engines</span></a></li>
+          <li><a href="#languages" class="sidebar-link">Supported Languages <span class="sidebar-pill">6
+                engines</span></a></li>
           <li><a href="#javascript-api" class="sidebar-link">JavaScript API</a></li>
         </ul>
       </div>
@@ -790,7 +794,8 @@
         <div class="sidebar-heading">Resources</div>
         <ul class="sidebar-menu">
           <li><a href="../playground/index.html" class="sidebar-link">Playground Studio ↗</a></li>
-          <li><a href="https://github.com/praTeek271/codUI/blob/main/CHANGELOG.md" target="_blank" class="sidebar-link">Changelog ↗</a></li>
+          <li><a href="https://github.com/praTeek271/codUI/blob/main/CHANGELOG.md" target="_blank"
+              class="sidebar-link">Changelog ↗</a></li>
         </ul>
       </div>
     </aside>
@@ -802,14 +807,16 @@
       <section class="doc-section" id="quickstart">
         <h1 class="doc-title">CodUI Documentation</h1>
         <p class="doc-lead">
-          A zero-dependency, ultra-lightweight Web Component (<code>&lt;cod-ui&gt;</code>) for code syntax highlighting with isolated Shadow DOM styling, built-in line numbers, multiple themes, and one-click clipboard copy.
+          A zero-dependency, ultra-lightweight Web Component (<code>&lt;cod-ui&gt;</code>) for code syntax highlighting
+          with isolated Shadow DOM styling, built-in line numbers, multiple themes, and one-click clipboard copy.
         </p>
 
         <div class="callout callout-tip">
           <div class="callout-icon">💡</div>
           <div class="callout-body">
             <strong>Zero Configuration Required</strong>
-            Just drop one <code>&lt;script&gt;</code> tag and use <code>&lt;cod-ui&gt;</code> anywhere in your HTML, React, Vue, Svelte, or static pages.
+            Just drop one <code>&lt;script&gt;</code> tag and use <code>&lt;cod-ui&gt;</code> anywhere in your HTML,
+            React, Vue, Svelte, or static pages.
           </div>
         </div>
 
@@ -817,19 +824,19 @@
         <p>Add the script from CDN and immediately place the custom element in your document:</p>
 
         <cod-ui lang="html" theme="dark" line-numbers="true">
-<script type="text/plain">
+          <script type="text/plain">
 <!-- 1. Include CodUI -->
-<script src="https://cdn.jsdelivr.net/gh/praTeek271/codUI@v2.1.0/codUI.js"></script>
+          <script src="https://cdn.jsdelivr.net/gh/praTeek271/codUI@v2.1.0/codUI.js"></script>
 
-<!-- 2. Use the component -->
-<cod-ui lang="js" theme="dracula" line-numbers="true">
-const calculateTotal = (items) => {
-    return items.reduce((acc, curr) => acc + curr.price, 0);
-};
+          <!-- 2. Use the component -->
+          <cod-ui lang="js" theme="dracula" line-numbers="true">
+            const calculateTotal = (items) => {
+            return items.reduce((acc, curr) => acc + curr.price, 0);
+            };
 
-console.log(calculateTotal([{ price: 29.99 }, { price: 49.99 }]));
-</cod-ui>
-</script>
+            console.log(calculateTotal([{ price: 29.99 }, { price: 49.99 }]));
+          </cod-ui>
+          </script>
         </cod-ui>
       </section>
 
@@ -841,17 +848,17 @@ console.log(calculateTotal([{ price: 29.99 }, { price: 49.99 }]));
 
         <h3 class="subsection-title">1. jsDelivr CDN (Fastest, zero setup)</h3>
         <cod-ui lang="html" theme="dark">
-<script type="text/plain">
+          <script type="text/plain">
 <script src="https://cdn.jsdelivr.net/gh/praTeek271/codUI@v2.1.0/codUI.js"></script>
-</script>
+          </script>
         </cod-ui>
 
         <h3 class="subsection-title">2. Local Project Inclusion</h3>
         <p>Download <code>codUI.js</code> from the repository releases and include it in your local directory:</p>
         <cod-ui lang="html" theme="dark">
-<script type="text/plain">
+          <script type="text/plain">
 <script src="./js/codUI.js" defer></script>
-</script>
+          </script>
         </cod-ui>
       </section>
 
@@ -896,18 +903,18 @@ console.log(calculateTotal([{ price: 29.99 }, { price: 49.99 }]));
           <!-- Target Dynamic Preview Element -->
           <div id="demo-container">
             <cod-ui id="live-demo-element" lang="js" theme="dark" line-numbers="true">
-// CodUI Dynamic Live Demonstration
-async function fetchReleaseInfo(tag = 'v2.1.0') {
-    try {
-        const res = await fetch(`https://api.github.com/repos/praTeek271/codUI/releases/tags/${tag}`);
-        if (!res.ok) throw new Error('Release not found');
-        const data = await res.json();
-        return { name: data.name, published: data.published_at };
-    } catch (err) {
-        console.error('Error fetching release:', err);
-        return null;
-    }
-}
+              // CodUI Dynamic Live Demonstration
+              async function fetchReleaseInfo(tag = 'v2.1.0') {
+              try {
+              const res = await fetch(`https://api.github.com/repos/praTeek271/codUI/releases/tags/${tag}`);
+              if (!res.ok) throw new Error('Release not found');
+              const data = await res.json();
+              return { name: data.name, published: data.published_at };
+              } catch (err) {
+              console.error('Error fetching release:', err);
+              return null;
+              }
+              }
             </cod-ui>
           </div>
         </div>
@@ -934,13 +941,15 @@ async function fetchReleaseInfo(tag = 'v2.1.0') {
                 <td><code>lang</code></td>
                 <td><code>string</code></td>
                 <td><span class="badge-default">'js'</span></td>
-                <td>Language syntax rules to apply. E.g. <code>js</code>, <code>ts</code>, <code>python</code>, <code>html</code>, <code>css</code>, <code>json</code>, <code>bash</code>.</td>
+                <td>Language syntax rules to apply. E.g. <code>js</code>, <code>ts</code>, <code>python</code>,
+                  <code>html</code>, <code>css</code>, <code>json</code>, <code>bash</code>.</td>
               </tr>
               <tr>
                 <td><code>theme</code></td>
                 <td><code>string</code></td>
                 <td><span class="badge-default">'dark'</span></td>
-                <td>Color theme applied inside the Shadow DOM: <code>dark</code>, <code>light</code>, <code>dracula</code>, or <code>glass</code>.</td>
+                <td>Color theme applied inside the Shadow DOM: <code>dark</code>, <code>light</code>,
+                  <code>dracula</code>, or <code>glass</code>.</td>
               </tr>
               <tr>
                 <td><code>line-numbers</code></td>
@@ -952,7 +961,8 @@ async function fetchReleaseInfo(tag = 'v2.1.0') {
                 <td><code>width</code></td>
                 <td><code>string</code></td>
                 <td><span class="badge-default">'100%'</span></td>
-                <td>CSS width value applied to the outer code window frame (e.g. <code>100%</code>, <code>680px</code>).</td>
+                <td>CSS width value applied to the outer code window frame (e.g. <code>100%</code>, <code>680px</code>).
+                </td>
               </tr>
               <tr>
                 <td><code>height</code></td>
@@ -979,8 +989,8 @@ async function fetchReleaseInfo(tag = 'v2.1.0') {
               <span class="sidebar-pill">theme="dark"</span>
             </div>
             <cod-ui lang="js" theme="dark">
-const status = "Active";
-function ping() { return true; }
+              const status = "Active";
+              function ping() { return true; }
             </cod-ui>
           </div>
 
@@ -991,9 +1001,9 @@ function ping() { return true; }
               <span class="sidebar-pill">theme="dracula"</span>
             </div>
             <cod-ui lang="python" theme="dracula">
-# Dracula Vibrant Palette
-def greet(name: str) -> str:
-    return f"Hello, {name}!"
+              # Dracula Vibrant Palette
+              def greet(name: str) -> str:
+              return f"Hello, {name}!"
             </cod-ui>
           </div>
 
@@ -1004,10 +1014,10 @@ def greet(name: str) -> str:
               <span class="sidebar-pill">theme="glass"</span>
             </div>
             <cod-ui lang="css" theme="glass">
-.card {
-    backdrop-filter: blur(12px);
-    background: rgba(255,255,255,0.05);
-}
+              .card {
+              backdrop-filter: blur(12px);
+              background: rgba(255,255,255,0.05);
+              }
             </cod-ui>
           </div>
 
@@ -1018,11 +1028,11 @@ def greet(name: str) -> str:
               <span class="sidebar-pill">theme="light"</span>
             </div>
             <cod-ui lang="json" theme="light">
-{
-  "theme": "light",
-  "verified": true,
-  "version": 2.1
-}
+              {
+              "theme": "light",
+              "verified": true,
+              "version": 2.1
+              }
             </cod-ui>
           </div>
         </div>
@@ -1049,37 +1059,43 @@ def greet(name: str) -> str:
                 <td><strong>JavaScript / TypeScript</strong></td>
                 <td><code>javascript</code></td>
                 <td><code>js</code>, <code>ts</code>, <code>jsx</code>, <code>tsx</code>, <code>typescript</code></td>
-                <td>ES2022+ keywords, async/await, types, interfaces, arrow functions, backticks, comments, function calls</td>
+                <td>ES2022+ keywords, async/await, types, interfaces, arrow functions, backticks, comments, function
+                  calls</td>
               </tr>
               <tr>
                 <td><strong>Python</strong></td>
                 <td><code>python</code></td>
                 <td><code>py</code></td>
-                <td>Python 3 keywords, triple-quoted strings, single/double strings, decorators (<code>@app.route</code>), hash comments</td>
+                <td>Python 3 keywords, triple-quoted strings, single/double strings, decorators
+                  (<code>@app.route</code>), hash comments</td>
               </tr>
               <tr>
                 <td><strong>HTML & XML</strong></td>
                 <td><code>html</code></td>
                 <td><code>xml</code></td>
-                <td>Tags (<code>&lt;div&gt;</code>, <code>&lt;/span&gt;</code>), attributes, HTML comments (<code>&lt;!-- --&gt;</code>)</td>
+                <td>Tags (<code>&lt;div&gt;</code>, <code>&lt;/span&gt;</code>), attributes, HTML comments
+                  (<code>&lt;!-- --&gt;</code>)</td>
               </tr>
               <tr>
                 <td><strong>CSS / SCSS / Less</strong></td>
                 <td><code>css</code></td>
                 <td><code>scss</code>, <code>less</code></td>
-                <td>Properties, units (<code>px</code>, <code>rem</code>, <code>ms</code>), CSS variables (<code>--color</code>), <code>@rules</code>, block comments</td>
+                <td>Properties, units (<code>px</code>, <code>rem</code>, <code>ms</code>), CSS variables
+                  (<code>--color</code>), <code>@rules</code>, block comments</td>
               </tr>
               <tr>
                 <td><strong>JSON</strong></td>
                 <td><code>json</code></td>
                 <td><em>none</em></td>
-                <td>Key vs string value differentiation, numbers, booleans (<code>true</code>/<code>false</code>), null</td>
+                <td>Key vs string value differentiation, numbers, booleans (<code>true</code>/<code>false</code>), null
+                </td>
               </tr>
               <tr>
                 <td><strong>Bash & Shell</strong></td>
                 <td><code>bash</code></td>
                 <td><code>sh</code>, <code>shell</code></td>
-                <td>CLI commands (<code>curl</code>, <code>grep</code>, <code>export</code>), control keywords, variables (<code>$USER</code>, <code>${REPO}</code>), hash comments</td>
+                <td>CLI commands (<code>curl</code>, <code>grep</code>, <code>export</code>), control keywords,
+                  variables (<code>$USER</code>, <code>${REPO}</code>), hash comments</td>
               </tr>
             </tbody>
           </table>
@@ -1091,13 +1107,15 @@ def greet(name: str) -> str:
       <section class="doc-section" id="displaying-html">
         <h2 class="section-title">Displaying HTML Code Blocks</h2>
         <p>
-          Because browser parsers interpret HTML tags eagerly when inside normal DOM nodes, placing raw HTML inside <code>&lt;cod-ui&gt;</code> requires handling to ensure tags aren't parsed as active DOM elements.
+          Because browser parsers interpret HTML tags eagerly when inside normal DOM nodes, placing raw HTML inside
+          <code>&lt;cod-ui&gt;</code> requires handling to ensure tags aren't parsed as active DOM elements.
         </p>
 
         <h3 class="subsection-title">Option 1: Script Wrapper (Recommended for HTML snippets)</h3>
-        <p>Wrap your snippet inside <code>&lt;script type="text/plain"&gt;</code>. The browser will completely ignore parsing the tags, and CodUI automatically extracts the clean text:</p>
+        <p>Wrap your snippet inside <code>&lt;script type="text/plain"&gt;</code>. The browser will completely ignore
+          parsing the tags, and CodUI automatically extracts the clean text:</p>
         <cod-ui lang="html" theme="dark" line-numbers="true">
-<script type="text/plain">
+          <script type="text/plain">
 <cod-ui lang="html" theme="dark">
   <script type="text/plain">
 <div class="user-profile">
@@ -1105,14 +1123,14 @@ def greet(name: str) -> str:
     <h2>Alex Rivers</h2>
 </div>
   </script>
-</cod-ui>
-</script>
+        </cod-ui>
+        </script>
         </cod-ui>
 
         <h3 class="subsection-title">Option 2: HTML Escaped Entities</h3>
         <p>Escape <code>&lt;</code> as <code>&amp;lt;</code> and <code>&gt;</code> as <code>&amp;gt;</code>:</p>
         <cod-ui lang="html" theme="dark">
-<script type="text/plain">
+          <script type="text/plain">
 <cod-ui lang="html" theme="dark">
 &lt;div class="container"&gt;
     &lt;h1&gt;Hello World&lt;/h1&gt;
@@ -1122,13 +1140,16 @@ def greet(name: str) -> str:
         </cod-ui>
 
         <h3 class="subsection-title">Option 3: Programmatic DOM API</h3>
-        <p>Create the element via JavaScript and set <code>textContent</code>. This completely bypasses the browser's HTML parser:</p>
+        <p>Create the element via JavaScript and set <code>textContent</code>. This completely bypasses the browser's
+          HTML parser:</p>
         <cod-ui lang="js" theme="dark">
-const codeSnippet = document.createElement('cod-ui');
-codeSnippet.setAttribute('lang', 'html');
-codeSnippet.setAttribute('theme', 'dracula');
-codeSnippet.textContent = '<div class="alert"><p>Warning message</p></div>';
-document.body.appendChild(codeSnippet);
+          const codeSnippet = document.createElement('cod-ui');
+          codeSnippet.setAttribute('lang', 'html');
+          codeSnippet.setAttribute('theme', 'dracula');
+          codeSnippet.textContent = '<div class="alert">
+            <p>Warning message</p>
+          </div>';
+          document.body.appendChild(codeSnippet);
         </cod-ui>
       </section>
 
@@ -1141,26 +1162,27 @@ document.body.appendChild(codeSnippet);
         <h3 class="subsection-title">Static Highlighting Method: <code>CodUI.highlight()</code></h3>
         <p>You can generate highlighted HTML strings directly without rendering a custom element DOM tree:</p>
         <cod-ui lang="js" theme="dark">
-// Access the Custom Element constructor
-const highlightedHTML = customElements.get('cod-ui').highlight(
-    'const author = "CodUI";', 
-    'js'
-);
+          // Access the Custom Element constructor
+          const highlightedHTML = customElements.get('cod-ui').highlight(
+          'const author = "CodUI";',
+          'js'
+          );
 
-console.log(highlightedHTML);
-// Output: '<span class="keyword">const</span> author = <span class="string">"CodUI"</span>;'
+          console.log(highlightedHTML);
+          // Output: '<span class="keyword">const</span> author = <span class="string">"CodUI"</span>;'
         </cod-ui>
 
         <h3 class="subsection-title">Dynamic Attribute Mutation</h3>
-        <p>Because CodUI registers <code>observedAttributes</code>, modifying attributes dynamically triggers instant re-renders:</p>
+        <p>Because CodUI registers <code>observedAttributes</code>, modifying attributes dynamically triggers instant
+          re-renders:</p>
         <cod-ui lang="js" theme="dark">
-const el = document.querySelector('cod-ui');
+          const el = document.querySelector('cod-ui');
 
-// Switch theme dynamically
-el.setAttribute('theme', 'glass');
+          // Switch theme dynamically
+          el.setAttribute('theme', 'glass');
 
-// Toggle line numbers
-el.setAttribute('line-numbers', 'false');
+          // Toggle line numbers
+          el.setAttribute('line-numbers', 'false');
         </cod-ui>
       </section>
 
@@ -1171,9 +1193,12 @@ el.setAttribute('line-numbers', 'false');
         <p>
           CodUI encapsulates all of its styling inside an open <strong>Shadow DOM</strong>. This means:
         </p>
-        <ul style="padding-left: 24px; color: var(--text-muted); margin-bottom: 20px; font-size: 15px; display: flex; flex-direction: column; gap: 8px;">
-          <li>Your global page CSS (e.g. Bootstrap, Tailwind, normalize.css) will <strong>never leak</strong> inside or break the code block's typography or button styles.</li>
-          <li>CodUI's internal syntax colors will <strong>never collide</strong> with your existing <code>.keyword</code> or <code>.string</code> classes.</li>
+        <ul
+          style="padding-left: 24px; color: var(--text-muted); margin-bottom: 20px; font-size: 15px; display: flex; flex-direction: column; gap: 8px;">
+          <li>Your global page CSS (e.g. Bootstrap, Tailwind, normalize.css) will <strong>never leak</strong> inside or
+            break the code block's typography or button styles.</li>
+          <li>CodUI's internal syntax colors will <strong>never collide</strong> with your existing
+            <code>.keyword</code> or <code>.string</code> classes.</li>
         </ul>
       </section>
 
@@ -1186,7 +1211,8 @@ el.setAttribute('line-numbers', 'false');
           <div class="callout-icon">❓</div>
           <div class="callout-body">
             <strong>Why did my arrow function <code>=&gt;</code> turn into <code>=&amp;gt;</code>?</strong>
-            In versions prior to v2.0.9, innerHTML parsing could cause double-escaping. Upgrade to <code>v2.1.0</code> which uses direct textContent extraction to completely eliminate double-escaping.
+            In versions prior to v2.0.9, innerHTML parsing could cause double-escaping. Upgrade to <code>v2.1.0</code>
+            which uses direct textContent extraction to completely eliminate double-escaping.
           </div>
         </div>
 
@@ -1194,7 +1220,8 @@ el.setAttribute('line-numbers', 'false');
           <div class="callout-icon">❓</div>
           <div class="callout-body">
             <strong>Why did Python hash strings like <code>'#'</code> turn green as comments?</strong>
-            In early versions, the comment regex ran prior to string matching. In <code>v2.1.0</code>, a single-pass alternation ensures strings take precedence, correctly preserving hash characters inside quotes.
+            In early versions, the comment regex ran prior to string matching. In <code>v2.1.0</code>, a single-pass
+            alternation ensures strings take precedence, correctly preserving hash characters inside quotes.
           </div>
         </div>
 
@@ -1202,7 +1229,8 @@ el.setAttribute('line-numbers', 'false');
           <div class="callout-icon">❓</div>
           <div class="callout-body">
             <strong>Does CodUI require any bundler or build step to use?</strong>
-            No! It is written in pure vanilla JavaScript and utilizes native standard Web Components supported in 100% of modern browsers (Chrome, Safari, Firefox, Edge).
+            No! It is written in pure vanilla JavaScript and utilizes native standard Web Components supported in 100%
+            of modern browsers (Chrome, Safari, Firefox, Edge).
           </div>
         </div>
       </section>
@@ -1224,7 +1252,8 @@ el.setAttribute('line-numbers', 'false');
         <li><a href="../index.html">Landing</a></li>
         <li><a href="../playground/index.html">Studio Playground</a></li>
         <li><a href="https://github.com/praTeek271/codUI" target="_blank" rel="noopener">GitHub</a></li>
-        <li><a href="https://github.com/praTeek271/codUI/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
+        <li><a href="https://github.com/praTeek271/codUI/blob/main/LICENSE" target="_blank" rel="noopener">MIT
+            License</a></li>
       </ul>
     </div>
   </footer>
@@ -1381,7 +1410,7 @@ echo "Deployment successful for \${REPO}!"`
             link.classList.add('active');
           }
         });
-      }, { passive: true });
+      }, {passive: true});
     });
   </script>
 
