@@ -395,6 +395,29 @@
         .copy-snippet-btn:hover { background: var(--plat); box-shadow: 0 4px 14px rgba(248,249,250,0.14); }
         .copy-snippet-btn.copied { background: #22c55e; color: #fff; }
 
+        .image-export { position: relative; }
+        #btn-export-image {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .image-export-divider { width: 1px; height: 18px; background: rgba(108,117,125,0.35); }
+        #btn-export-image svg { width: 13px; height: 13px; transition: transform 0.2s; }
+        #btn-export-image[aria-expanded="true"] svg { transform: rotate(180deg); }
+        .image-export-menu {
+            position: absolute; left: 0; right: 0; bottom: calc(100% + 6px);
+            display: none; padding: 4px 0;
+            background: #2c3137; border: 1px solid rgba(108,117,125,0.38);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .image-export-menu.open { display: block; }
+        .image-export-option {
+            display: block; width: 100%; padding: 8px 14px;
+            background: transparent; border: 0; color: var(--plat);
+            font: 13px var(--font-ui); text-align: left; cursor: pointer;
+        }
+        .image-export-option:hover { background: rgba(108,117,125,0.22); color: var(--snow); }
+
         .info-card {
             background: rgba(73,80,87,0.32);
             border: 1px solid rgba(108,117,125,0.26);
@@ -585,6 +608,20 @@
                 <textarea id="export-textarea" readonly spellcheck="false"></textarea>
             </div>
             <button class="copy-snippet-btn" id="btn-copy-snippet">Copy Snippet</button>
+            <div class="image-export">
+                <button class="copy-snippet-btn" id="btn-export-image" aria-expanded="false">
+                    <span id="image-export-label">Download as Image</span>
+                    <span class="image-export-divider" aria-hidden="true"></span>
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="2,4 6,8 10,4"/>
+                    </svg>
+                </button>
+                <div class="image-export-menu" id="image-export-menu" role="menu">
+                    <button class="image-export-option" data-format="png" role="menuitem">PNG</button>
+                    <button class="image-export-option" data-format="jpg" role="menuitem">JPG</button>
+                    <button class="image-export-option" data-format="webp" role="menuitem">WebP</button>
+                </div>
+            </div>
             <div class="info-card">
                 ✦ Zero dependencies. Drop <code>codUI.js</code> into any page and <code>&lt;cod-ui&gt;</code> works instantly — no build step required.
             </div>
@@ -611,6 +648,9 @@
             btnCloseDrawer: document.getElementById('btn-close-drawer'),
             exportTextarea: document.getElementById('export-textarea'),
             btnCopySnippet: document.getElementById('btn-copy-snippet'),
+            btnExportImage: document.getElementById('btn-export-image'),
+            imageExportLabel: document.getElementById('image-export-label'),
+            imageExportMenu: document.getElementById('image-export-menu'),
         };
 
         // ── Starter code for every supported language ──
@@ -838,6 +878,125 @@ log "Done."`
             DOM.exportTextarea.value = `<cod-ui ${attrs}>\n${DOM.input.value}\n</cod-ui>`;
         }
 
+        // ── Image export ──
+        async function exportPreviewAsImage(format) {
+            const formats = {
+                png:  { mime: 'image/png',  extension: 'png', quality: 1 },
+                jpg:  { mime: 'image/jpeg', extension: 'jpg', quality: 0.96 },
+                webp: { mime: 'image/webp', extension: 'webp', quality: 0.96 }
+            };
+            const selectedFormat = formats[format] || formats.png;
+            const element = DOM.container.querySelector('cod-ui');
+            if (!element || !element.shadowRoot) return;
+
+            const windowElement = element.shadowRoot.querySelector('.window');
+            if (!windowElement) return;
+
+            const bounds = windowElement.getBoundingClientRect();
+            const width = Math.ceil(bounds.width);
+            const height = Math.ceil(bounds.height);
+            if (!width || !height) return;
+
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            const context = canvas.getContext('2d');
+            context.scale(scale, scale);
+            if (selectedFormat.mime === 'image/jpeg') {
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, width, height);
+            }
+            const relativeRect = (rect) => ({
+                x: rect.left - bounds.left,
+                y: rect.top - bounds.top,
+                width: rect.width,
+                height: rect.height
+            });
+            const paintBackground = (selector) => {
+                const target = element.shadowRoot.querySelector(selector);
+                if (!target) return;
+                const styles = getComputedStyle(target);
+                const rect = relativeRect(target.getBoundingClientRect());
+                context.fillStyle = styles.backgroundColor;
+                context.fillRect(rect.x, rect.y, rect.width, rect.height);
+            };
+
+            paintBackground('.window');
+            paintBackground('.header');
+            paintBackground('.line-numbers-col');
+
+            const header = element.shadowRoot.querySelector('.header');
+            const headerStyles = header && getComputedStyle(header);
+            if (header && headerStyles) {
+                const headerRect = relativeRect(header.getBoundingClientRect());
+                context.strokeStyle = headerStyles.borderBottomColor;
+                context.lineWidth = parseFloat(headerStyles.borderBottomWidth) || 1;
+                context.beginPath();
+                context.moveTo(headerRect.x, headerRect.y + headerRect.height - 0.5);
+                context.lineTo(headerRect.x + headerRect.width, headerRect.y + headerRect.height - 0.5);
+                context.stroke();
+            }
+
+            element.shadowRoot.querySelectorAll('.dot').forEach((dot) => {
+                const rect = relativeRect(dot.getBoundingClientRect());
+                const styles = getComputedStyle(dot);
+                context.fillStyle = styles.backgroundColor;
+                context.beginPath();
+                context.arc(rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 2, 0, Math.PI * 2);
+                context.fill();
+            });
+
+            const textWalker = document.createTreeWalker(element.shadowRoot, NodeFilter.SHOW_TEXT);
+            let textNode;
+            while ((textNode = textWalker.nextNode())) {
+                if (!textNode.parentElement || textNode.parentElement.closest('style')) continue;
+
+                const styles = getComputedStyle(textNode.parentElement);
+                const fontSize = parseFloat(styles.fontSize) || 14;
+                const lineHeight = parseFloat(styles.lineHeight) || fontSize;
+                context.font = `${styles.fontStyle} ${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+                context.fillStyle = styles.color;
+                context.textBaseline = 'alphabetic';
+
+                let segment = '';
+                let segmentX = 0;
+                let segmentY = 0;
+                let segmentTop = null;
+                const paintSegment = () => {
+                    if (segment) context.fillText(segment, segmentX, segmentY);
+                    segment = '';
+                    segmentTop = null;
+                };
+
+                for (let index = 0; index < textNode.length; index++) {
+                    const range = document.createRange();
+                    range.setStart(textNode, index);
+                    range.setEnd(textNode, index + 1);
+                    const rect = range.getBoundingClientRect();
+                    if (!rect.width || !rect.height) {
+                        paintSegment();
+                        continue;
+                    }
+
+                    const top = rect.top - bounds.top;
+                    if (segmentTop !== null && Math.abs(top - segmentTop) > 0.5) paintSegment();
+                    if (!segment) {
+                        segmentX = rect.left - bounds.left;
+                        segmentY = rect.bottom - bounds.top - (lineHeight - fontSize) / 2 - 1;
+                        segmentTop = top;
+                    }
+                    segment += textNode.data[index];
+                }
+                paintSegment();
+            }
+
+            const link = document.createElement('a');
+            link.download = `codui-${DOM.lang.value}-${DOM.theme.value}.${selectedFormat.extension}`;
+            link.href = canvas.toDataURL(selectedFormat.mime, selectedFormat.quality);
+            link.click();
+        }
+
         // ── Language change — load starter ──
         DOM.lang.addEventListener('change', () => {
             if (!DOM.input.value.trim() || DOM.input.dataset.isStarter === 'true') {
@@ -885,7 +1044,51 @@ log "Done."`
                 DOM.btnCopySnippet.classList.add('copied');
                 setTimeout(() => { DOM.btnCopySnippet.textContent = 'Copy Snippet'; DOM.btnCopySnippet.classList.remove('copied'); }, 2000);
             };
-            navigator.clipboard ? navigator.clipboard.writeText(text).then(done) : (DOM.exportTextarea.select(), document.execCommand('copy'), done());
+            const fallbackCopy = () => {
+                DOM.exportTextarea.focus();
+                DOM.exportTextarea.select();
+                document.execCommand('copy');
+                done();
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+        });
+
+        DOM.btnExportImage.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isOpen = DOM.imageExportMenu.classList.toggle('open');
+            DOM.btnExportImage.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        DOM.imageExportMenu.addEventListener('click', async (event) => {
+            const option = event.target.closest('[data-format]');
+            if (!option) return;
+
+            const format = option.dataset.format;
+            DOM.imageExportMenu.classList.remove('open');
+            DOM.btnExportImage.setAttribute('aria-expanded', 'false');
+            DOM.btnExportImage.disabled = true;
+            DOM.imageExportLabel.textContent = 'Preparing ' + format.toUpperCase() + '...';
+            try {
+                await exportPreviewAsImage(format);
+                DOM.imageExportLabel.textContent = format.toUpperCase() + ' Downloaded';
+            } catch (error) {
+                console.error(format.toUpperCase() + ' export failed:', error);
+                DOM.imageExportLabel.textContent = format.toUpperCase() + ' Export Failed';
+            }
+            setTimeout(() => {
+                DOM.btnExportImage.disabled = false;
+                DOM.imageExportLabel.textContent = 'Download as Image';
+            }, 2000);
+        });
+
+        document.addEventListener('click', () => {
+            DOM.imageExportMenu.classList.remove('open');
+            DOM.btnExportImage.setAttribute('aria-expanded', 'false');
         });
 
         // ── Custom animated dropdowns ──
